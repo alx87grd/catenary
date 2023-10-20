@@ -130,7 +130,7 @@ def plot_test():
                                         x_max = 100, w_l = 0.5, n_out = 10, 
                                         center = [0,0,0] , w_o = 100 )
 
-    plot  = catenary.catenaryEstimationPlot(  p_true , p_hat , pts )
+    plot  = catenary.CatenaryEstimationPlot(  p_true , p_hat , pts )
     
     return True
     
@@ -151,7 +151,7 @@ def animation_test():
                                      w_l = 0.5, n_out = 10, center = [0,0,0] , 
                                      w_o = 100 )
 
-    plot  = catenary.catenaryEstimationPlot(  p , p_hat , pts )
+    plot  = catenary.CatenaryEstimationPlot(  p , p_hat , pts )
     
     for i in range(101):
         
@@ -183,7 +183,7 @@ def convergence_basic_test( method = 'sample' ,  grad = False ):
                                        x_max = 30, w_l = 0.5, n_out = 10, 
                                        center = [50,50,50] , w_o = 100 )
     
-    plot  = catenary.catenaryEstimationPlot(  p_true , p_init , pts , 50 , -50 , +50 )
+    plot  = catenary.CatenaryEstimationPlot(  p_true , p_init , pts , 50 , -50 , +50 )
     
     bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
     
@@ -231,7 +231,7 @@ def tracking_basic_test( method = 'sample' ,  grad = False , partial_obs = False
                                      w_l = 0.5, n_out = 10, center = [50,50,50] , 
                                      w_o = 100 )
     
-    plot  = catenary.catenaryEstimationPlot( p , p_hat , pts , 50 , -50 , +50 )
+    plot  = catenary.CatenaryEstimationPlot( p , p_hat , pts , 50 , -50 , +50 )
     
     for i in range(51):
         
@@ -290,7 +290,7 @@ def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = Fa
                                      w_l = 0.5, n_out = 10, center = [0,0,0] , 
                                      w_o = 100 )
 
-    plot  = catenary.catenaryEstimationPlot(  p , p_hat , pts )
+    plot  = catenary.CatenaryEstimationPlot(  p , p_hat , pts )
     
     for i in range(201):
         
@@ -348,7 +348,7 @@ def grouping_test():
                                        x_max = 30, w_l = 0.5, n_out = 10, 
                                        center = [50,50,50] , w_o = 100 )
     
-    plot  = catenary.catenaryEstimationPlot( p_true , p_init , pts , 50 , -50 , +50 )
+    plot  = catenary.CatenaryEstimationPlot( p_true , p_init , pts , 50 , -50 , +50 )
     
     # ###########################
     # # Optimization
@@ -382,6 +382,161 @@ def grouping_test():
     pts_in = catenary.get_catanery_group( p_hat , pts , 2.0 )
     
     plot.ax.plot( pts_in[0,:] , pts_in[1,:] , pts_in[2,:], 'o' , label= 'Group')
+    
+    
+###########################
+# Speed tests
+###########################
+        
+
+
+def speed_test():
+    
+    
+    p_true  =  np.array([ 32.0, 43.0, 77.0, 1.3, 53.0])
+    p_init  =  np.array([ 10.0, 10.0, 10.0, 2.0, 80.0])
+    
+    pts  = catenary.generate_test_data( p_true , n_obs = 20 , x_min = -30,
+                                       x_max = 30, w_l = 0.5, n_out = 10, 
+                                       center = [50,50,50] , w_o = 100 )
+
+    
+    
+    bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
+    
+    ###########################
+    # 1
+    ###########################
+    
+    method = 'sample'
+    grad   = False
+    
+    params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    func = lambda p: catenary.J(p, pts, p_init, params)
+    
+    if grad:
+        jac = lambda p: catenary.dJ_dp( p, pts, p_init, params)
+    else:
+        jac = None
+    
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t1 = time.time() - start_time
+    p1 = res.x
+    
+    ###########################
+    # 2
+    ###########################
+    
+    method = 'sample'
+    grad   = True
+    
+    params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    func = lambda p: catenary.J(p, pts, p_init, params)
+    
+    if grad:
+        jac = lambda p: catenary.dJ_dp( p, pts, p_init, params)
+    else:
+        jac = None
+    
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t2 = time.time() - start_time
+    p2 = res.x
+    
+    ###########################
+    # 3
+    ###########################
+    
+    method = 'x'
+    grad   = False
+    
+    params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    func = lambda p: catenary.J(p, pts, p_init, params)
+    
+    if grad:
+        jac = lambda p: catenary.dJ_dp( p, pts, p_init, params)
+    else:
+        jac = None
+    
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t3 = time.time() - start_time
+    p3 = res.x
+    
+    ###########################
+    # 4
+    ###########################
+    
+    method = 'x'
+    grad   = True
+    
+    params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    func = lambda p: catenary.J(p, pts, p_init, params)
+    
+    if grad:
+        jac = lambda p: catenary.dJ_dp( p, pts, p_init, params)
+    else:
+        jac = None
+    
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t4 = time.time() - start_time
+    p4 = res.x
+    
+    
+    
+    print( f" Init: {np.array2string(p_init, precision=2, floatmode='fixed')} \n" +
+           f" True: {np.array2string(p_true, precision=2, floatmode='fixed')} \n" )
+    
+    print('Sample no grad   t=',t1, 'p1_hat =' , p1 )
+    print('Sample with grad t=',t2, 'p1_hat =' , p2 )
+    print('x no grad        t=',t3, 'p1_hat =' , p3 )
+    print('x with grad      t=',t4, 'p1_hat =' , p4 )
 
 
 
@@ -409,6 +564,8 @@ if __name__ == "__main__":
     # tracking_basic_test()
     # tracking_basic_test( grad = True )
     
-    # tracking_advanced_test()
+    tracking_advanced_test()
     
     # grouping_test()
+    
+    # speed_test()

@@ -125,7 +125,6 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
 # # Optimization
 # ###########################
         
-        
 ############################
 def lorentzian( x , l = 1.0 , power = 2 , b = 1.0 ):
     """ 
@@ -133,15 +132,15 @@ def lorentzian( x , l = 1.0 , power = 2 , b = 1.0 ):
     Cost shaping function that smooth out the cost of large distance to 
     minimize the effect of outliers.
     
+    c = np.log10( 1 + ( b * x ) ** power / l )
+    
     inputs
     --------
-    x     : input vector of distances
-    
-    l
+    x  : input vector of distance
     
     outputs
     ----------
-    c     : output vector of cost for each distances
+    c  : output vector of cost for each distances
         
     """
     
@@ -182,6 +181,41 @@ def J( p , pts , p_nom , param = default_cost_param ):
     """ 
     Cost function for curve fitting a catanery model on a point cloud
     
+    J = average_cost_per_measurement + regulation_term
+    
+    see attached notes.
+    
+    inputs
+    --------
+    p     : 5x1 parameter vector
+    pts   : 3xm cloud point
+    p_nom : 5x1 expected parameter vector ( optionnal for regulation )
+    param : list of cost function parameter and options
+    
+    default_param = [ method = 'sample' , 
+                     Q = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                     b = 1.0 , 
+                     l = 1.0 , 
+                     power = 2 , 
+                     n = 1000 , 
+                     x_min = -200 , 
+                     x_max = 200    ] 
+    
+    method = 'sample' : sample-based brute force scheme
+    method = 'x'      : data association is based on local x in cat frame
+    
+    Q      : 5x5 regulation weight matrix
+    b      : scalar parameter in lorentzian function
+    l      : scalar parameter in lorentzian function
+    power  : scalar parameter in lorentzian function
+    n      : number of sample (only used with method = 'sample' )
+    x_min  : x start point of model catenary (only used with method = 'sample')
+    x_max  : x end point of model catenary (only used with method = 'sample' )
+    
+    outputs
+    ----------
+    J : cost scalar
+    
     """
     
     m      = pts.shape[1]  # number of measurements
@@ -199,7 +233,7 @@ def J( p , pts , p_nom , param = default_cost_param ):
     if method == 'sample':
         """ data association is sampled-based """
     
-        # Minimum distance to points
+        # Minimum distances to model catenary
         d_min = d_min_sample( p , pts , n , x_min , x_max )
     
     ###################################################
@@ -248,7 +282,19 @@ def J( p , pts , p_nom , param = default_cost_param ):
 
 ############################
 def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
-    """ """
+    """ 
+    
+    Gradient of J with respect to parameters p
+    
+    inputs
+    --------
+    see J function doc
+    
+    outputs
+    ----------
+    dJ_dp : 1 x 5 gradient evaluated at p
+    
+    """
 
     if num:
         
@@ -415,7 +461,7 @@ def get_catanery_group( p_hat , pts , d_th = 1.0 , n_sample = 1000 , x_min = -20
 
 
 ###############################################################################
-class catenaryEstimationPlot:
+class CatenaryEstimationPlot:
     """ 
     """
     
@@ -639,7 +685,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    plot_lorentzian( 0.01)
+    plot_lorentzian( 1.0 )
 
     
 
