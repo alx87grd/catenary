@@ -104,8 +104,8 @@ def gradient_test( method = 'sample' ):
     grad_analytical = catenary.dJ_dp( p , pts, p_nom, params , False )
     grad_numerical  = catenary.dJ_dp( p , pts, p_nom, params , True  )
     
-    print( 'Analytical grad: ' , grad_analytical )
-    print( 'Numerical  grad: ' , grad_numerical )
+    print( 'Analytical grad:\n' , grad_analytical )
+    print( 'Numerical  grad:\n' , grad_numerical )
     
     e = np.linalg.norm( grad_analytical - grad_numerical ) / np.linalg.norm( grad_numerical )
     

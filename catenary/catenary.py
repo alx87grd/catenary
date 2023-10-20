@@ -351,10 +351,13 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
             ey     = e[1,:]
             ez     = e[2,:]
             
-            de_dx0  = np.sinh( x_c ) * np.cos( phi )
-            de_dy0  = np.sinh( x_c ) * np.sin( phi )
-            de_dphi = - np.sinh( x_c ) * ( - np.sin( phi ) * ( x_w - x0 ) + 
-                                             np.cos( phi ) * ( y_w - y0 ) ) 
+            # print( x_c )
+            # print( np.sinh( x_c ) )
+            
+            de_dx0  = np.sinh( x_c / a ) * np.cos( phi )
+            de_dy0  = np.sinh( x_c / a ) * np.sin( phi )
+            de_dphi = - np.sinh( x_c / a ) * ( - np.sin( phi ) * ( x_w - x0 ) + 
+                                                 np.cos( phi ) * ( y_w - y0 ) ) 
             
             c = np.cos( phi )
             s = np.sin( phi )
@@ -363,7 +366,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
             eT_de_dp = np.zeros( (5 , pts.shape[1] ) )
             
             eT_de_dp[0,:] = ey * s + ez * de_dx0
-            eT_de_dp[1,:] = ey * s + ez * de_dy0 
+            eT_de_dp[1,:] = ey * -c + ez * de_dy0 
             eT_de_dp[2,:] = -ez
             eT_de_dp[3,:] = ey * ( c * ( x0 - x_w ) + s * ( y0 - y_w ) ) + ez * de_dphi
             eT_de_dp[4,:] = -ez * ( np.cosh( x_c / a ) - x_c / a * np.sinh( x_c / a ) - 1 )
@@ -388,41 +391,6 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
         dJ_dp = dc_cp_average - 2 * p_e.T @ Q
     
     return dJ_dp
-
-
-
-
-
-
-############################
-def cost_local_yz( p_hat , pts ):
-    """ """
-    
-    n = pts.shape[1]
-    
-    a_hat     = p_hat[0]
-    w_T_local = w_T_c( p_hat[1] , p_hat[2] , p_hat[3] , p_hat[4])
-    local_T_w = np.linalg.inv( w_T_local )
-    
-    pts_world = np.vstack( [pts , np.ones(n) ] )
-    
-    # Compute measurements points positions in local cable frame
-    pts_local  = local_T_w @ pts_world
-    
-    # Compute expected z position based on x coord and catanery model
-    zs_hat     = cat( pts_local[0,:] , a_hat )
-    
-    # Compute delta vector between measurements and expected position
-    delta      = np.zeros((3,n))
-    delta[1,:] = pts_local[1,:]
-    delta[2,:] = pts_local[2,:] - zs_hat
-    
-    norm = np.linalg.norm( delta , axis = 0 )
-    
-    costs = lorentzian( norm , 1)
-    
-    return costs.sum()
-
 
 
 # ###########################
@@ -671,7 +639,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    pass
+    plot_lorentzian( 0.01)
 
     
 
