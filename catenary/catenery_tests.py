@@ -271,12 +271,115 @@ def tracking_basic_test( method = 'sample' ,  grad = False , partial_obs = False
                 f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
         plot.update_estimation( p_hat )
+        
+        
+        
+def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = False ):
+    
+    p0      =  np.array([  0 ,  0 ,  0 , 0.2 , 500 ])
+    dp_dt   =  np.array([  1 ,  1 , 10 , 0.01 , 0  ])
+    
+    p_hat   =  np.array([  -100 ,  -100 ,  -100 , 0.5   , 400 ])
+    
+    t = np.linspace( 0 , 20, 201 )
+    
+    ( pts , p ) = catenery.generate_test_data_sequence( 0, p0 , dp_dt , partial_obs = True, 
+                                     n_obs = 20 , x_min = -100, x_max = 100, 
+                                     w_l = 0.5, n_out = 10, center = [0,0,0] , 
+                                     w_o = 100 )
+
+    plot  = catenery.CateneryEstimationPlot(  p , p_hat , pts )
+    
+    for i in range(201):
+        
+        ( pts , p )  = catenery.generate_test_data_sequence( t[i], p0 , dp_dt , 
+                                                    partial_obs = True, 
+                                         n_obs = 20 , x_min = -100, x_max = 100, 
+                                         w_l = 0.5, n_out = 10, center = [0,0,0] , 
+                                         w_o = 100 )
+        plot.update_true( p )
+        plot.update_pts( pts )
+        
+        bounds = [ (0,500) , (0,500), (0,500) , (0,3.14) , (100,2000) ]
+        # params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+        #             1.0 , 1.0 , 2 , 25 , -20 , 20] 
+        
+        params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 ]) ,
+                    1.0 , 1.0 , 2 , 25 , -20 , 20] 
+        
+        start_time = time.time()
+        
+        func = lambda p: catenery.J(p, pts, p_hat, params)
+        grad = lambda p: catenery.dJ_dp( p, pts, p_hat, params)
+        
+        res = minimize( func,
+                        p_hat, 
+                        method='SLSQP',  
+                        bounds=bounds, 
+                        jac=grad,
+                        #constraints=constraints,  
+                        callback=plot.update_estimation, 
+                        options={'disp':True,'maxiter':500})
+        
+        p_hat = res.x
+        
+        print( f" Optimzation completed in : { time.time() - start_time } sec \n"     +
+               f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
+               f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        plot.update_estimation( p_hat )
     
         
     
 ###########################
-# Convergence test
+# Grouping test
 ###########################
+
+
+
+def grouping_test():
+    
+    p_true  =  np.array([ 32.0, 43.0, 77.0 , 1.3, 530.])
+    p_init  =  np.array([ 10.0, 10.0, 10.0 , 2.0, 800.])
+    
+    pts  = pts  = catenery.generate_test_data( p_true , n_obs = 20 , x_min = -30,
+                                       x_max = 30, w_l = 0.5, n_out = 10, 
+                                       center = [50,50,50] , w_o = 100 )
+    
+    plot  = catenery.CateneryEstimationPlot( p_true , p_init , pts , 50 , -50 , +50 )
+    
+    # ###########################
+    # # Optimization
+    # ###########################
+    
+    bounds = [ (0,100), (0,100) , (0,100) ,  (0,3.14) , (100,2000) ]
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    start_time = time.time()
+    
+    func = lambda p: catenery.J(p, pts, p_init, params)
+    grad = lambda p: catenery.dJ_dp( p, pts, p_init, params)
+    
+    res = minimize( func, 
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac=grad,
+                    #constraints=constraints,  
+                    callback=plot.update_estimation, 
+                    options={'disp':True,'maxiter':500})
+    
+    p_hat = res.x
+    
+    print( f" Optimzation completed in : { time.time() - start_time } sec \n"     +
+           f" Init: {np.array2string(p_init, precision=2, floatmode='fixed')} \n" +
+           f" True: {np.array2string(p_true, precision=2, floatmode='fixed')} \n" + 
+           f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+    
+    pts_in = catenery.get_catanery_group( p_hat , pts , 2.0 )
+    
+    plot.ax.plot( pts_in[0,:] , pts_in[1,:] , pts_in[2,:], 'o' , label= 'Group')
 
 
 
@@ -299,4 +402,8 @@ if __name__ == "__main__":
     # convergence_basic_test( grad = True )
     
     # tracking_basic_test()
-    tracking_basic_test( grad = True )
+    # tracking_basic_test( grad = True )
+    
+    # tracking_advanced_test()
+    
+    grouping_test()
