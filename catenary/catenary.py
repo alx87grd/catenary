@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 import time
 
 ###########################
-# Catanery function
+# Catenary function
 ###########################
 
 ############################
@@ -45,7 +45,7 @@ def cat( x , a = 1. ):
 ############################
 def w_T_c( phi , x , y , z):
     """ 
-    Tranformation matrix from catenery local frame to world frame
+    Tranformation matrix from catenary local frame to world frame
     
     inputs
     ----------
@@ -56,7 +56,7 @@ def w_T_c( phi , x , y , z):
     
     outputs
     ----------
-    world_T_catenery  : 4x4 Transformation Matrix
+    world_T_catenary  : 4x4 Transformation Matrix
     
     """
     
@@ -95,7 +95,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
     r_w[0,:] : x positions in world frame
     r_w[1,:] : y positions in world frame
     r_w[2,:] : z positions in world frame
-    x_c      : vector of x coord in catenery frame
+    x_c      : vector of x coord in catenary frame
     
     """
     
@@ -108,7 +108,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
     phi = p[3]
     a   = p[4]
     
-    # catenery frame z
+    # catenary frame z
     z_c      = cat( x_c , a )
     
     r_c      = np.zeros((4,n))
@@ -174,7 +174,7 @@ def d_min_sample( p , pts , n_sample = 1000 , x_min = -200, x_max = 200 ):
     return d_min
 
 
-default_cost_param = [ 'sample' , np.diag([ 1.0 , 1.0 , 1.0 , 10.0 , 0.01 ]) ,
+default_cost_param = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
                         1.0 , 1.0 , 2 , 1000 , -200 , 200] 
 
 ############################
@@ -195,20 +195,47 @@ def J( p , pts , p_nom , param = default_cost_param ):
     x_min  = param[6]
     x_max  = param[7]
     
+    ###################################################
     if method == 'sample':
+        """ data association is sampled-based """
     
         # Minimum distance to points
         d_min = d_min_sample( p , pts , n , x_min , x_max )
-        
-        # Cost shaping function
-        c = lorentzian( d_min , l , power , b )
-        
-        # Average costs per measurement plus regulation
-        pts_cost = c.sum() / m 
-        
+    
+    ###################################################
     elif method == 'x':
+        """ data association is based on local x-coord in cat frame """
         
-        pass
+        x0  = p[0]
+        y0  = p[1]
+        z0  = p[2]
+        psi = p[3]
+        a   = p[4]
+        
+        c_T_w = np.linalg.inv( w_T_c( psi , x0 , y0 , z0 ) )
+        
+        r_w = np.vstack( [ pts , np.ones(m) ] )
+        
+        # Compute measurements points positions in local cable frame
+        r_c  = c_T_w @ r_w
+        
+        # Compute expected z position based on x coord and catanery model
+        z_hat  = cat( r_c[0,:] , a )
+        
+        # Compute delta vector between measurements and expected position
+        e      = np.zeros((3,m))
+        e[1,:] = r_c[1,:]
+        e[2,:] = r_c[2,:] - z_hat
+        
+        d_min = np.linalg.norm( e , axis = 0 )
+        
+    ###################################################
+        
+    # Cost shaping function
+    c = lorentzian( d_min , l , power , b )
+    
+    # Average costs per measurement plus regulation
+    pts_cost = c.sum() / m 
     
     # Regulation
     p_e = p_nom - p
@@ -217,6 +244,7 @@ def J( p , pts , p_nom , param = default_cost_param ):
     cost = pts_cost + p_e.T @ Q @ p_e
     
     return cost
+
 
 ############################
 def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
@@ -255,6 +283,12 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
         x_min  = param[6]
         x_max  = param[7]
         
+        x0  = p[0]
+        y0  = p[1]
+        z0  = p[2]
+        phi = p[3]
+        a   = p[4]
+        
         if method == 'sample':
         
            # generate a list of sample point on the model curve
@@ -278,10 +312,6 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
            # Error Grad for each pts
            eT_de_dp = np.zeros( (5 , pts.shape[1] ) )
            
-           
-           phi = p[3]
-           a   = p[4]
-           
            eT_de_dp[0,:] = -e_min[0,:]
            eT_de_dp[1,:] = -e_min[1,:]
            eT_de_dp[2,:] = -e_min[2,:]
@@ -294,7 +324,54 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
             
         elif method == 'x':
             
-            pass
+            # Pts in world frame
+            x_w = pts[0,:]
+            y_w = pts[1,:]
+            z_w = pts[2,:]
+            
+            # Compute measurements points positions in local cable frame
+            r_w   = np.vstack( [ pts , np.ones(m) ] )
+            c_T_w = np.linalg.inv( w_T_c( phi , x0 , y0 , z0 ) )
+            r_c   = c_T_w @ r_w
+            
+            x_c   = r_c[0,:]
+            y_c   = r_c[1,:]
+            z_c   = r_c[2,:]
+            
+            # Model z
+            z_hat = cat( x_c , a )
+            
+            # Error in local frame
+            e      = np.zeros((3,m))
+            e[1,:] = y_c
+            e[2,:] = z_c - z_hat
+            
+            d_min  = np.linalg.norm( e , axis = 0 )
+            
+            ey     = e[1,:]
+            ez     = e[2,:]
+            
+            de_dx0  = np.sinh( x_c ) * np.cos( phi )
+            de_dy0  = np.sinh( x_c ) * np.sin( phi )
+            de_dphi = - np.sinh( x_c ) * ( - np.sin( phi ) * ( x_w - x0 ) + 
+                                             np.cos( phi ) * ( y_w - y0 ) ) 
+            
+            c = np.cos( phi )
+            s = np.sin( phi )
+            
+            # Error Grad for each pts
+            eT_de_dp = np.zeros( (5 , pts.shape[1] ) )
+            
+            eT_de_dp[0,:] = ey * s + ez * de_dx0
+            eT_de_dp[1,:] = ey * s + ez * de_dy0 
+            eT_de_dp[2,:] = -ez
+            eT_de_dp[3,:] = ey * ( c * ( x0 - x_w ) + s * ( y0 - y_w ) ) + ez * de_dphi
+            eT_de_dp[4,:] = -ez * ( np.cosh( x_c / a ) - x_c / a * np.sinh( x_c / a ) - 1 )
+            
+            # Norm grad
+            dd_dp = eT_de_dp / d_min
+        
+        ################################
         
         # Smoothing grad
         dc_dd = b * power * ( b * d_min ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d_min ) ** power )
@@ -346,19 +423,6 @@ def cost_local_yz( p_hat , pts ):
     
     return costs.sum()
 
-############################
-def cost_dmin_sample( p_hat , pts , l = 1.0 ):
-    """ """
-    
-    d_min = d_min_sample( p_hat , pts )
-    
-    # Cost shaping function
-    pts_cost = lorentzian( d_min , l )
-    
-    # Sum of all costs
-    cost = pts_cost.sum()
-    
-    return cost
 
 
 # ###########################
@@ -383,7 +447,7 @@ def get_catanery_group( p_hat , pts , d_th = 1.0 , n_sample = 1000 , x_min = -20
 
 
 ###############################################################################
-class CateneryEstimationPlot:
+class catenaryEstimationPlot:
     """ 
     """
     
@@ -509,7 +573,7 @@ def noisy_p2r_w( p , x_min = -200, x_max = 200 , n = 400, w = 0.5 ):
 ############################
 def multiples_noisy_p2r_w( p , x_min, x_max , n , w ):
     """
-    Create 3D world pts for a list of catenery parameters vector
+    Create 3D world pts for a list of catenary parameters vector
 
     """
     
