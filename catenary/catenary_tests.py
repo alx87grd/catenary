@@ -283,7 +283,7 @@ def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = Fa
     
     p_hat   =  np.array([  -100 ,  -100 ,  -100 , 0.5   , 400 ])
     
-    t = np.linspace( 0 , 20, 201 )
+    t = np.linspace( 0 , 2, 21 )
     
     ( pts , p ) = catenary.generate_test_data_sequence( 0, p0 , dp_dt , partial_obs = True, 
                                      n_obs = 20 , x_min = -100, x_max = 100, 
@@ -292,7 +292,7 @@ def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = Fa
 
     plot  = catenary.CatenaryEstimationPlot(  p , p_hat , pts )
     
-    for i in range(201):
+    for i in range(21):
         
         ( pts , p )  = catenary.generate_test_data_sequence( t[i], p0 , dp_dt , 
                                                     partial_obs = True, 
@@ -556,16 +556,16 @@ if __name__ == "__main__":
     # plot_test()
     # animation_test()
     
-    # convergence_basic_test()
-    # convergence_basic_test( method = 'x' )
-    # convergence_basic_test( grad = True )
-    # convergence_basic_test( method = 'x' , grad = True )
+    convergence_basic_test()
+    convergence_basic_test( method = 'x' )
+    convergence_basic_test( grad = True )
+    convergence_basic_test( method = 'x' , grad = True )
     
-    # tracking_basic_test()
+    tracking_basic_test()
     # tracking_basic_test( grad = True )
     
     tracking_advanced_test()
     
-    # grouping_test()
+    grouping_test()
     
-    # speed_test()
+    speed_test()

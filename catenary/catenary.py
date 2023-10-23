@@ -149,20 +149,27 @@ def lorentzian( x , l = 1.0 , power = 2 , b = 1.0 ):
     return c
 
 
-############################
-def d_min_sample( p , pts , n_sample = 1000 , x_min = -200, x_max = 200 ):
-    """ 
-    
-    Compute the minimum distance between 3D pts and the catanery curve defined
-    by p based on brute force and sampling on the model curve
-    
+
+###############################################
+def compute_d_min( r_measurements , r_model ):
     """
     
-    # generate a list of sample point on the model curve
-    r_hat  = p2r_w( p, n_sample , x_min , x_max )[0]
+    Compute the distance between a list of 3D measurements and the closest 
+    point in a list of model points
+
+    Inputs
+    ----------
+    r_measurements : (3 x m) array
+    r_model        : (3 x n) array
+
+    Ouputs
+    -------
+    d_min : (1 x m) array
+
+    """
     
-    # Vectors between measurements and model sample pts
-    e  = pts[:,:,np.newaxis] - r_hat[:,np.newaxis,:]
+    # Vectors between measurements and all model pts
+    e  = r_measurements[:,:,np.newaxis] - r_model[:,np.newaxis,:]
     
     # Distances between measurements and model sample pts
     d = np.linalg.norm( e , axis = 0 )
@@ -173,13 +180,16 @@ def d_min_sample( p , pts , n_sample = 1000 , x_min = -200, x_max = 200 ):
     return d_min
 
 
+
+############################
+
 default_cost_param = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
                         1.0 , 1.0 , 2 , 1000 , -200 , 200] 
 
 ############################
 def J( p , pts , p_nom , param = default_cost_param ):
     """ 
-    Cost function for curve fitting a catanery model on a point cloud
+    Cost function for curve fitting a catenary model on a point cloud
     
     J = average_cost_per_measurement + regulation_term
     
@@ -233,8 +243,11 @@ def J( p , pts , p_nom , param = default_cost_param ):
     if method == 'sample':
         """ data association is sampled-based """
     
-        # Minimum distances to model catenary
-        d_min = d_min_sample( p , pts , n , x_min , x_max )
+        # generate a list of sample point on the model curve
+        r_model  = p2r_w( p, n , x_min , x_max )[0]
+        
+        # Minimum distances to model for all measurements
+        d_min = compute_d_min( pts , r_model )
     
     ###################################################
     elif method == 'x':
@@ -444,10 +457,13 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
 # ###########################
 
 ############################
-def get_catanery_group( p_hat , pts , d_th = 1.0 , n_sample = 1000 , x_min = -200, x_max = 200):
+def get_catanery_group( p , pts , d_th = 1.0 , n_sample = 1000 , x_min = -200, x_max = 200):
     
-    # Distance to catanery curves
-    d_min = d_min_sample( p_hat , pts , n_sample , x_min ,  x_max )
+    # generate a list of sample point on the model curve
+    r_model  = p2r_w( p, n_sample , x_min , x_max )[0]
+    
+    # Minimum distances to model for all measurements
+    d_min = compute_d_min( pts , r_model )
     
     # Group based on threshlod
     pts_in = pts[ : , d_min < d_th ]
