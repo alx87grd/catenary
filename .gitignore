@@ -27,6 +27,7 @@ MANIFEST
 # Data etc #
 ############################
 *.npy
+*.npz
 *.csv
 *.mat
 
