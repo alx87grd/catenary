@@ -69,6 +69,52 @@ def basic_concergence_test():
             f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
     
     
+############################
+def basic_tracking_test():
+
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
+    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25    ])
+    
+    pts = powerline32.generate_test_data( p , partial_obs = True )
+    
+    plot = powerline32.Powerline32EstimationPlot( p , p_hat , pts )
+    
+    bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) , (5,100), (5,100) , (5,100)]
+    
+    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
+                1.0 , 1.0 , 2 , 501 , -200 , 200] 
+    
+    
+    for i in range(500):
+        
+        pts = powerline32.generate_test_data( p , partial_obs = True )
+        
+        plot.update_pts( pts )
+    
+        start_time = time.time()
+        
+        func = lambda p: powerline32.J(p, pts, p_hat, params)
+    
+        
+        res = minimize( func,
+                        p_hat, 
+                        method='SLSQP',  
+                        bounds=bounds, 
+                        #constraints=constraints,  
+                        # callback=plot.update_estimation, 
+                        options={'disp':True,'maxiter':500})
+        
+        p_hat = res.x
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( f" Optimzation completed in : { time.time() - start_time } sec \n"     
+                f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
+                f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+    
+    
+    
 
 
 
@@ -82,7 +128,9 @@ def basic_concergence_test():
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    basic_concergence_test()
+    # basic_concergence_test()
+    
+    basic_tracking_test()
     
 
 
