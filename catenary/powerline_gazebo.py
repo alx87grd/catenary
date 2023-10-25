@@ -28,13 +28,13 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
      |
      h3
      |
-     _          4                 d3     5
+     _          4                 d1     5
      ^                       |----------->   
      |
-     h2
+     h1
      |                          
      _     2                                     3
-     ^                                 d2
+     ^                                 d1
      |                       |------------------->   
      h1          
      |
@@ -56,10 +56,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
         phi : z rotation of local frame basis in in world frame
         a   : sag parameter
         d1  : horizontal distance between power lines
-        d2  : horizontal distance between power lines
-        d3  : horizontal distance between power lines
         h1  : vertical distance between power lines 
-        h2  : vertical distance between power lines 
         h3  : vertical distance between power lines 
         
     x_min  : start of points in cable local frame 
@@ -83,18 +80,15 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
     phi = p[3]
     a   = p[4]
     d1  = p[5]
-    d2  = p[6]
-    d3  = p[7]
-    h1  = p[8]
-    h2  = p[9]
-    h3  = p[10]
+    h1  = p[6]
+    h3  = p[7]
     
     # catenary frame z
     z_c      = catenary.cat( x_c , a )
     
     # Offset in local catenary frame
-    delta_y = np.array([ -d1 , d1 , -d2 , d2 , -d3   , d3      , 0 ])
-    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h2 , h1+h2   , h1+h2+h3])
+    delta_y = np.array([ -d1 , d1 , -d1 , d1 , -d1   , d1      , 0 ])
+    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h1 , h1+h1   , h1+h1+h3])
     
     r_c  = np.zeros((4,n,7))
     r_w  = np.zeros((4,n,7))
@@ -139,15 +133,12 @@ def p2p7( p ):
     phi = p[3]
     a   = p[4]
     d1  = p[5]
-    d2  = p[6]
-    d3  = p[7]
-    h1  = p[8]
-    h2  = p[9]
-    h3  = p[10]
+    h1  = p[6]
+    h3  = p[7]
     
     # Offset in local catenary frame
-    delta_y = np.array([ -d1 , d1 , -d2 , d2 , -d3   , d3      , 0 ])
-    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h2 , h1+h2   , h1+h2+h3])
+    delta_y = np.array([ -d1 , d1 , -d1 , d1 , -d1   , d1      , 0 ])
+    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h1 , h1+h1   , h1+h1+h3])
     
     p7  = np.zeros((5,7))
     
@@ -200,79 +191,61 @@ def generate_test_data( p , n_obs = 20 , x_min = -200, x_max = 200, w_l = 0.5,
 
 
 
-
-    
-
-###########################
-# Test
-###########################
-
-    
 ############################
-def basic_tracking_test():
+def basic_convergence_test():
     
-    from scipy.optimize import minimize
-    import time
     from powerline import J
     from powerline import EstimationPlot
+    from scipy.optimize import minimize
+    import time
 
+    p      =  np.array([  1, -3, 4, 0.2,  500, 4.  , 4  , 9  ])
+    p_init =  np.array([  0,  0, 0, 0.0, 1000, 5.  , 5. , 10 ])
+    
+    pts = generate_test_data(  p , n_obs = 10 , x_min = 0, x_max = 20, w_l = 0.1,
+                            n_out = 10, center = [0,0,0] , w_o = 100,
+                            partial_obs = False )
+    
+    plot = EstimationPlot( p , p_init , pts , p2r_w )
+    
+    bounds = [ (-5,5), (-5,5) , (-5,5) , (-0.3,0.3) , (100,2000) ,
+              (3,10), (3,10) , (5,15) ]
+    
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20, p2r_w ] 
+    
+    start_time = time.time()
+    
+    func = lambda p: J(p, pts, p_init, params)
 
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 70.  , 50. , 30 , 30 , 30 ])
-    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25  , 25 , 25 , 25 ])
     
-    pts = generate_test_data( p , partial_obs = True )
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    #constraints=constraints,  
+                    callback=plot.update_estimation, 
+                    options={'disp':True,'maxiter':500})
     
-    plot = EstimationPlot( p , p_hat , pts , p2r_w )
-    
-    bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) ,
-              (40,60), (40,80) , (40,60) , (20,40), (20,40) , (20,40) ]
-    
-    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
-                                        0.0001 , 0.002 , 0.002 , 0.002 , 
-                                        0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 501 , -200 , 200 , p2r_w ] 
+    p_hat = res.x
     
     
-    for i in range(500):
-        
-        pts = generate_test_data( p , partial_obs = True )
-        
-        plot.update_pts( pts )
-    
-        start_time = time.time()
-        
-        func = lambda p: J(p, pts, p_hat, params)
-    
-        
-        res = minimize( func,
-                        p_hat, 
-                        method='SLSQP',  
-                        bounds=bounds, 
-                        #constraints=constraints,  
-                        # callback=plot.update_estimation, 
-                        options={'disp':True,'maxiter':500})
-        
-        p_hat = res.x
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( f" Optimzation completed in : { time.time() - start_time } sec \n"     
-                f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
-                f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+    print( f" Optimzation completed in : { time.time() - start_time } sec \n"     +
+            f" Init: {np.array2string(p_init, precision=2, floatmode='fixed')} \n" +
+            f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
+            f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
 
 ############################
 def hard_tracking_test():
     
-    from scipy.optimize import minimize
-    import time
     from powerline import J
     from powerline import EstimationPlot
+    from scipy.optimize import minimize
+    import time
 
-
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 70.  , 50. , 30 , 30 , 30 ])
-    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25  , 25 , 25 , 25 ])
+    p      =  np.array([  1, -3, 4, 0.2,  500, 4.  , 4  , 9  ])
+    p_hat  =  np.array([  0,  0, 0, 0.0, 1000, 5.  , 5. , 10 ])
     
     pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
                                          x_min = -100, x_max = -50, n_out = 10 ,
@@ -280,19 +253,17 @@ def hard_tracking_test():
     
     plot = EstimationPlot( p , p_hat , pts , p2r_w )
     
-    bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) ,
-              (40,60), (40,80) , (40,60) , (20,40), (20,40) , (20,40) ]
+    bounds = [ (-5,5), (-5,5) , (-5,5) , (-0.3,0.3) , (100,2000) ,
+              (3,10), (3,10) , (5,15) ]
     
-    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
-                                        0.0001 , 0.002 , 0.002 , 0.002 , 
-                                        0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 501 , -200 , 200 , p2r_w ] 
+    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
+                1.0 , 1.0 , 2 , 501 , -200 , 200, p2r_w ] 
     
     
     for i in range(500):
         
         pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 10 ,
+                                             x_min = -10, x_max = +20, n_out = 10 ,
                                              center = [-50,-50,-50] , w_o = 10 )
         
         plot.update_pts( pts )
@@ -318,8 +289,57 @@ def hard_tracking_test():
         print( f" Optimzation completed in : { time.time() - start_time } sec \n"     
                 f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
                 f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+############################
+def cost_shape_plot():
     
+    from powerline import J
+    from powerline import EstimationPlot
+    import matplotlib.pyplot as plt
+    import time
 
+    p_hat =  np.array([  0,  0, 0, 0.0,  500, 5.  , 5  , 10  ])
+    p     =  np.array([  0,  0, 0, 0.0,  500, 5.  , 5. , 10 ])
+    
+    pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -50, n_out = 10 ,
+                                         center = [0,0,0] , w_o = 20 )
+    
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20, p2r_w ] 
+    
+    plot = EstimationPlot( p , p_hat , pts , p2r_w )
+    
+    
+    n = 100
+    zs = np.linspace( -25 , 25, n )
+    cs = np.zeros(n)
+    
+    
+    for i in range(n):
+        
+        p_hat[2] = zs[i]
+        
+        cs[i]    = J( p_hat, pts, p_hat, params)
+    
+        plot.update_estimation( p_hat )
+        
+    
+    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
+    
+    ax = [ax]
+    ax[0].plot( zs , cs  )
+    ax[0].set_xlabel( 'z_hat', fontsize = 5)
+    ax[0].set_ylabel( 'J(p)', fontsize = 5)
+    ax[0].grid(True)
+    ax[0].legend()
+    ax[0].tick_params( labelsize = 5 )
+        
+    
+    
+    
+    
 '''
 #################################################################
 ##################          Main                         ########
@@ -327,13 +347,16 @@ def hard_tracking_test():
 '''
 
 
+
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    
-    # basic_tracking_test()
+    # basic_convergence_test()
     
     hard_tracking_test()
+    
+    cost_shape_plot()
+
 
 
 

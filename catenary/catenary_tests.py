@@ -556,16 +556,47 @@ if __name__ == "__main__":
     # plot_test()
     # animation_test()
     
-    convergence_basic_test()
-    convergence_basic_test( method = 'x' )
-    convergence_basic_test( grad = True )
-    convergence_basic_test( method = 'x' , grad = True )
+    # convergence_basic_test()
+    # convergence_basic_test( method = 'x' )
+    # convergence_basic_test( grad = True )
+    # convergence_basic_test( method = 'x' , grad = True )
     
-    tracking_basic_test()
-    # tracking_basic_test( grad = True )
+    # tracking_basic_test()
+    # # tracking_basic_test( grad = True )
     
-    tracking_advanced_test()
+    # tracking_advanced_test()
     
-    grouping_test()
+    # grouping_test()
     
-    speed_test()
+    # speed_test()
+    
+    
+    
+    p_true  =  np.array([ 32.0, 43.0, 77.0, 1.3, 53.0])
+    p_init  =  np.array([ 10.0, 10.0, 10.0, 2.0, 80.0])
+    
+    pts  = catenary.generate_test_data( p_true , n_obs = 20 , x_min = -30,
+                                       x_max = 30, w_l = 0.5, n_out = 10, 
+                                       center = [50,50,50] , w_o = 100 )
+    
+    plot  = catenary.CatenaryEstimationPlot(  p_true , p_init , pts , 50 , -50 , +50 )
+    
+    bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
+    
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+    
+    start_time = time.time()
+    
+    func = lambda p: catenary.J(p, pts, p_init, params)
+    
+    
+    res = minimize( func,
+                    p_init, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    #constraints=constraints,  
+                    callback=plot.update_estimation, 
+                    options={'disp':True,'maxiter':500})
+    
+    p_hat = res.x
