@@ -27,13 +27,21 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
     
     ----------------------------------------------------------
     
-                                d2
-                             |---->
-     ^                 3          4 
-     |          
-     h          
+     ^                       6
      |
-     _          0            1             2 
+     h3
+     |
+     _          4                 d3     5
+     ^                       |----------->   
+     |
+     h2
+     |                          
+     _     2                                     3
+     ^                                 d2
+     |                       |------------------->   
+     h1          
+     |
+     _         0                           1             
        
                                   d1
                             |------------->          
@@ -51,8 +59,11 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
         phi : z rotation of local frame basis in in world frame
         a   : sag parameter
         d1  : horizontal distance between power lines
-        d2  : horizontal distance between guard cable
-        h   : vertical distance between power lines and guard cables
+        d2  : horizontal distance between power lines
+        d3  : horizontal distance between power lines
+        h1  : vertical distance between power lines 
+        h2  : vertical distance between power lines 
+        h3  : vertical distance between power lines 
         
     x_min  : start of points in cable local frame 
     x_max  : end   of points in cable local frame
@@ -76,19 +87,22 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
     a   = p[4]
     d1  = p[5]
     d2  = p[6]
-    h   = p[7]
+    d3  = p[7]
+    h1  = p[8]
+    h2  = p[9]
+    h3  = p[10]
     
     # catenary frame z
     z_c      = catenary.cat( x_c , a )
     
     # Offset in local catenary frame
-    delta_y = np.array([ -d1 , 0 , d1 , -d2 , d2 ])
-    delta_z = np.array([   0 , 0 ,  0 , +h  , +h ])
+    delta_y = np.array([ -d1 , d1 , -d2 , d2 , -d3   , d3      , 0 ])
+    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h2 , h1+h2   , h1+h2+h3])
     
-    r_c  = np.zeros((4,n,5))
-    r_w  = np.zeros((4,n,5))
+    r_c  = np.zeros((4,n,7))
+    r_w  = np.zeros((4,n,7))
     
-    for i in range(5):
+    for i in range(7):
     
         r_c[0,:,i] = x_c
         r_c[1,:,i] = delta_y[i]
@@ -97,7 +111,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
         
         r_w[:,:,i] = catenary.w_T_c( phi, x_0, y_0, z_0 ) @ r_c[:,:,i]
         
-    r_w_flat = r_w.reshape( (4 , n * 5 ) , order =  'F')
+    r_w_flat = r_w.reshape( (4 , n * 7 ) , order =  'F')
     
     return ( r_w_flat[0:3,:] , r_w[0:3,:,:] , x_c ) 
 
@@ -105,7 +119,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
 ############################
 def flat2five( r ):
     
-    return r.reshape( (3,-1,5) , order =  'F' )
+    return r.reshape( (3,-1,7) , order =  'F' )
 
 ############################
 def five2flat( r ):
@@ -114,7 +128,7 @@ def five2flat( r ):
 
 
 ############################
-def p2p5( p ):
+def p2p7( p ):
     """
     Input: powerline32 parameter vector  ( 8 x 1 array )
     Ouput: list of  5 catenary parameter vector ( 5 x 5 array )
@@ -129,27 +143,30 @@ def p2p5( p ):
     a   = p[4]
     d1  = p[5]
     d2  = p[6]
-    h   = p[7]
+    d3  = p[7]
+    h1  = p[8]
+    h2  = p[9]
+    h3  = p[10]
     
     # Offset in local catenary frame
-    delta_y = np.array([ -d1 , 0 , d1 , -d2 , d2 ])
-    delta_z = np.array([   0 , 0 ,  0 , +h  , +h ])
+    delta_y = np.array([ -d1 , d1 , -d2 , d2 , -d3   , d3      , 0 ])
+    delta_z = np.array([   0 , 0 ,  h1 , h1  , h1+h2 , h1+h2   , h1+h2+h3])
     
-    p5  = np.zeros((5,5))
+    p7  = np.zeros((5,7))
     
-    for i in range(5):
+    for i in range(7):
         
         r0_c = np.array([ 0 , delta_y[i] , delta_z[i] , 1.0 ])
         
         r0_w = catenary.w_T_c( phi, x_0, y_0, z_0 ) @ r0_c
     
-        p5[0,i] = r0_w[0]
-        p5[1,i] = r0_w[1]
-        p5[2,i] = r0_w[2]
-        p5[3,i] = p[3]
-        p5[4,i] = p[4]
+        p7[0,i] = r0_w[0]
+        p7[1,i] = r0_w[1]
+        p7[2,i] = r0_w[2]
+        p7[3,i] = p[3]
+        p7[4,i] = p[4]
         
-    return p5
+    return p7
 
 
 ############################
@@ -164,9 +181,9 @@ def generate_test_data( p , n_obs = 20 , x_min = -200, x_max = 200, w_l = 0.5,
     #outliers
     pts  = catenary.outliers( n_out, center , w_o )
     
-    for i in range(5):
+    for i in range(7):
         
-        p_line = p2p5( p )[:,i]  # parameter vector of ith line
+        p_line = p2p7( p )[:,i]  # parameter vector of ith line
     
         if partial_obs:
             
@@ -199,16 +216,17 @@ if __name__ == "__main__":
     from powerline import EstimationPlot
     from powerline import J
     
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
-    p_init =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25    ])
+    p      =  np.array([  50,  50,  50, 1.0, 600, 30.  , 40.  , 30. , 30 , 30 , 30 ])
+    p_init =  np.array([ 100, 100, 100, 1.0, 300, 30.  , 40.  , 30. , 30 , 30 , 30 ])
     
     pts = generate_test_data( p , partial_obs = True )
     
     plot = EstimationPlot( p , p_init , pts , p2r_w )
     
-    bounds = [ (0,200), (0,200) , (0,200) , (0,1.14) , (100,2000) , (5,100), (5,100) , (5,100)]
+    bounds = [ (0,200), (0,200) , (0,200) , (0,1.14) , (100,2000) ,
+              (5,100), (5,100) , (5,100) , (5,100), (5,100) , (5,100)]
     
-    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0]) ,
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0, 0 , 0 , 0 ]) ,
                 1.0 , 1.0 , 2 , 25 , -20 , 20, p2r_w ] 
     
     start_time = time.time()
