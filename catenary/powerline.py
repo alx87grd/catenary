@@ -139,8 +139,10 @@ class ArrayEstimator:
         self.p_ub      = np.zeros( self.n_p )
         self.p_lb      = np.zeros( self.n_p )
         #translation
-        self.p_ub[0:3] = p_0[0:3] + 50.0
-        self.p_lb[0:3] = p_0[0:3] - 50.0
+        self.p_ub[0:2] = p_0[0:2] + 50.0
+        self.p_lb[0:2] = p_0[0:1] - 50.0
+        self.p_ub[2] = p_0[2] + 100.0
+        self.p_lb[3] = p_0[3] - 100.0
         # rotation
         self.p_ub[3] = p_0[3] + 0.5
         self.p_lb[3] = p_0[3] - 0.5
@@ -455,20 +457,21 @@ def scan_z_test_test( zscan = True ):
     p_hat  =  np.array([   0,   0,   0, 1.2, 500, 51.  , 25.  , 49  ])
     
     pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 10 ,
+                                         x_min = -100, x_max = -50, n_out = 5 ,
                                          center = [0,0,0] , w_o = 20 )
     
     plot = EstimationPlot( p , p_hat , pts , p2r_w )
     
     estimator = ArrayEstimator( p2r_w , p_hat )
     
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
     
     for i in range(50):
         
         pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 10 ,
+                                             x_min = -100, x_max = -70, n_out = 5 ,
                                              center = [-50,-50,-50] , w_o = 10 )
         
         plot.update_pts( pts )
