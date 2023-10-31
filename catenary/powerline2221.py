@@ -8,9 +8,7 @@ Created on Mon Oct 23 09:03:21 2023
 
 import numpy as np
 
-###########################
-# catenary function
-###########################
+
 
 import catenary
 
