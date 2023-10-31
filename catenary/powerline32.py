@@ -364,9 +364,9 @@ if __name__ == "__main__":
     
     # basic_concergence_test()
     
-    # basic_tracking_test()
+    basic_tracking_test()
     
-    hard_tracking_test()
+    # hard_tracking_test()
 
 
 

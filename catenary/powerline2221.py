@@ -331,9 +331,9 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    # basic_tracking_test()
+    basic_tracking_test()
     
-    hard_tracking_test()
+    # hard_tracking_test()
 
 
 
