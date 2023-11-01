@@ -291,24 +291,11 @@ class ArrayModel32( ArrayModel ):
 ###############################################################################
 class ArrayModel2221( ArrayModel ):
     """
-    ArrayModel 32 is a model for 5 catenary with 3 offsets variables
+    ArrayModel 32 is a model for 7 catenary with 6 offsets variables
     
-    ----------------------------------------------------------
-    
-                                d2
-                             |---->
-     ^                 3          4 
-     |          
-     h          
-     |
-     _          0            1             2 
-       
-                                  d1
-                            |------------->          
-    
-    ----------------------------------------------------------
-    
-    p      :  8 x 1 array of parameters 
+    inputs
+    --------
+    p      : vector of parameters 
     
         x_0 : x translation of local frame orign in world frame
         y_0 : y translation of local frame orign in world frame
@@ -316,15 +303,42 @@ class ArrayModel2221( ArrayModel ):
         phi : z rotation of local frame basis in in world frame
         a   : sag parameter
         d1  : horizontal distance between power lines
-        d2  : horizontal distance between guard cable
-        h   : vertical distance between power lines and guard cables
+        d2  : horizontal distance between power lines
+        d3  : horizontal distance between power lines
+        h1  : vertical distance between power lines 
+        h2  : vertical distance between power lines 
+        h3  : vertical distance between power lines 
+        
+    ----------------------------------------------------------
+    
+     ^                       6
+     |
+     h3
+     |
+     _          4                 d3     5
+     ^                       |----------->   
+     |
+     h2
+     |                          
+     _     2                                     3
+     ^                                 d2
+     |                       |------------------->   
+     h1          
+     |
+     _         0                           1             
+       
+                                  d1
+                            |------------->          
+    
+    
+    ----------------------------------------------------------
         
     """
     
     #################################################
     def __init__(self):
 
-        ArrayModel.__init__( self, l = 8 , q = 5 )
+        ArrayModel.__init__( self, l = 11 , q = 7 )
         
         
     ############################
@@ -335,25 +349,113 @@ class ArrayModel2221( ArrayModel ):
         """
         
         delta = np.zeros((3, self.q ))
-
+        
         d1  = p[5]
         d2  = p[6]
-        h   = p[7]
+        d3  = p[7]
+        h1  = p[8]
+        h2  = p[9]
+        h3  = p[10]
         
         # Offset in local catenary frame
-        
         delta[1,0] = -d1    # y offset of cable 0
-        delta[1,2] = +d1    # y offset of cable 2
-        delta[1,3] = -d2    # y offset of cable 3
-        delta[1,4] = +d2    # y offset of cable 4
+        delta[1,1] = +d1    # y offset of cable 1
+        delta[1,2] = -d2    # y offset of cable 2
+        delta[1,3] = +d2    # y offset of cable 3
+        delta[1,4] = -d3    # y offset of cable 4
+        delta[1,5] = +d3    # y offset of cable 5
         
-        delta[2,3] = +h    # z offset of cable 3
-        delta[2,4] = +h    # z offset of cable 4
+        delta[2,2] = +h1    # z offset of cable 2
+        delta[2,3] = +h1    # z offset of cable 3
+        delta[2,4] = +h1+h2    # z offset of cable 4
+        delta[2,5] = +h1+h2    # z offset of cable 5
+        delta[2,6] = +h1+h2+h3    # z offset of cable 2
         
         return delta
     
+    
+###############################################################################
+class ArrayModelConstant2221( ArrayModel ):
+    """
+    ArrayModel 32 is a model for 7 catenary with 6 offsets variables
+    
+    ----------------------------------------------------------
+    
+     ^                       6
+     |
+     h3
+     |
+     _          4                 d1       5
+     ^                       |------------->   
+     |
+     h1
+     |                          
+     _          2                          3
+     ^                                 d1
+     |                       |------------>   
+     h1          
+     |
+     _         0                           1             
+       
+                                  d1
+                            |------------->          
+    
+    
+    ----------------------------------------------------------
+    
+    inputs
+    --------
+    p      : vector of parameters 
+    
+        x_0 : x translation of local frame orign in world frame
+        y_0 : y translation of local frame orign in world frame
+        z_0 : z translation of local frame orign in world frame
+        phi : z rotation of local frame basis in in world frame
+        a   : sag parameter
+        d1  : horizontal distance between power lines
+        h1  : vertical distance between power lines 
+        h3  : vertical distance between power lines        
+    
+    
+    ----------------------------------------------------------
+        
+    """
+    
+    #################################################
+    def __init__(self):
 
-
+        ArrayModel.__init__( self, l = 11 , q = 7 )
+        
+        
+    ############################
+    def p2deltas( self, p ):
+        """ 
+        Compute the translation vector of each individual catenary model origin
+        with respect to the model origin in the model frame
+        """
+        
+        delta = np.zeros((3, self.q ))
+        
+        d1  = p[5]
+        h1  = p[6]
+        h3  = p[7]
+        
+        # Offset in local catenary frame
+        delta[1,0] = -d1    # y offset of cable 0
+        delta[1,1] = +d1    # y offset of cable 1
+        delta[1,2] = -d1    # y offset of cable 2
+        delta[1,3] = +d1    # y offset of cable 3
+        delta[1,4] = -d1    # y offset of cable 4
+        delta[1,5] = +d1    # y offset of cable 5
+        
+        delta[2,2] = +h1    # z offset of cable 2
+        delta[2,3] = +h1    # z offset of cable 3
+        delta[2,4] = +h1+h1    # z offset of cable 4
+        delta[2,5] = +h1+h1    # z offset of cable 5
+        delta[2,6] = +h1+h1+h3    # z offset of cable 2
+        
+        return delta
+    
 
 
 # ###########################
