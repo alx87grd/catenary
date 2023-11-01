@@ -727,6 +727,44 @@ class ArrayEstimator:
         
         return p_hat
     
+    #####################################################
+    def solve_with_translation_search( self, pts , p_init , var = 10 , callback = None ):
+        
+        bounds = self.get_bounds()
+        param  = self.get_cost_parameters()
+        func   = lambda p: J(p, pts, p_init, param)
+        
+        n = 10
+        
+        # variation to params
+        rng    = np.random.default_rng( seed = None )
+        deltas = var * rng.standard_normal(( 3 , n ))
+        
+        # solutions
+        ps = np.zeros(( self.n_p , n ))
+        js = np.zeros(n)
+        
+        for i in range(n):
+            
+            p      = p_init
+            p[0:3] = p_init[0:3] + deltas[:,i]
+        
+            res = minimize( func,
+                            p, 
+                            method='SLSQP',  
+                            bounds=bounds, 
+                            #constraints=constraints,  
+                            callback=callback, 
+                            options={'disp':False,'maxiter':500})
+            
+            ps[:,i] = res.x
+            js[i]   = res.fun
+            
+        i_star = js.argmin()
+        p_hat  = ps[:,i_star]
+        
+        return p_hat
+    
     
     #####################################################
     def is_target_aquired( self, p , pts , ):

@@ -539,6 +539,7 @@ def scan_z_test_test( zscan = True ):
     return estimator
 
 
+
 ############################
 def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
     
@@ -581,6 +582,54 @@ def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
     
     
 
+############################
+def translation_search_test( search = True , var = 10 ):
+    
+    model  = powerline.ArrayModel32()
+    
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
+    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 25.  , 49  ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -50, n_out = 5 ,
+                                         center = [0,0,0] , w_o = 20 )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
+    
+    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    
+    for i in range(25):
+        
+        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                             x_min = -100, x_max = -70, n_out = 5 ,
+                                             center = [-50,-50,-50] , w_o = 10 )
+        
+        plot.update_pts( pts )
+    
+        if search:
+            p_hat  = estimator.solve_with_translation_search( pts , p_hat , var )
+            
+        else:
+            p_hat  = estimator.solve( pts , p_hat )
+            
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+    
+    
+
 '''
 #################################################################
 ##################          Main                         ########
@@ -592,29 +641,32 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_array3_convergence_test()
+    # basic_array3_convergence_test()
     
-    basic_array32_convergence_test()
+    # basic_array32_convergence_test()
     
-    basic_array32_tracking_test()
+    # basic_array32_tracking_test()
     
-    hard_array32_tracking_test()
+    # hard_array32_tracking_test()
     
-    hard_array32_tracking_local_minima_analysis()
+    # hard_array32_tracking_local_minima_analysis()
     
-    basic_array2221_tracking_test()
+    # basic_array2221_tracking_test()
     
-    hard_array2221_tracking_test()
+    # hard_array2221_tracking_test()
     
-    hard_arrayconstant2221_tracking_test()
+    # hard_arrayconstant2221_tracking_test()
     
-    arrayconstant2221_cost_shape_analysis()
+    # arrayconstant2221_cost_shape_analysis()
     
-    basic_array32_estimator_test()
+    # basic_array32_estimator_test()
     
-    scan_z_test_test( False )
+    # scan_z_test_test( False )
     
-    scan_z_test_test( True )
+    # scan_z_test_test( True )
     
-    array32_cost_shape_analysis()
+    # array32_cost_shape_analysis()
+    
+    translation_search_test( False )
+    translation_search_test( True )
 
