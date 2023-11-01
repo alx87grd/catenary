@@ -7,15 +7,16 @@ Created on Tue Oct 31 14:46:33 2023
 """
 
 import numpy as np
-
-
-import catenary
-import powerline
+import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 import time
 
 
-def basic_3lines_convergence_test():
+import catenary
+import powerline
+
+
+def basic_array3_convergence_test():
     
     p_1  =  np.array([ 28.0, 30.0, 77.0, 0.0, 53.0])
     p_2  =  np.array([ 28.0, 50.0, 77.0, 0.0, 53.0])
@@ -64,9 +65,9 @@ def basic_3lines_convergence_test():
     
     
 ############################
-def basic_32lines_convergence_test():
+def basic_array32_convergence_test():
     
-
+    model  = powerline.ArrayModel32()
 
     p_1  =  np.array([ 28.0, 30.0, 77.0, 0.0, 53.0])
     p_2  =  np.array([ 28.0, 50.0, 77.0, 0.0, 53.0])
@@ -85,12 +86,8 @@ def basic_32lines_convergence_test():
     p      =  np.array([  28.0, 50.0, 77.0, 0.0, 53, 20.0, 15.0, 20.0 ])
     
     p_init =  np.array([  10.0, 10.0, 10.0, 1.0, 80, 16., 15., 16.0 ])
-    # p_init =  np.array([  20.0, 40.0, 60.0, 0.2, 70, 21., 21., 21.0 ])
     
     bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , (15,30)]
-    
-    
-    model  = powerline.ArrayModel32()
     
     params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0]) ,
                 1.0 , 1.0 , 2 , 55 , -50 , 50, model.p2r_w ] 
@@ -115,9 +112,273 @@ def basic_32lines_convergence_test():
             f" Init: {np.array2string(p_init, precision=2, floatmode='fixed')} \n" +
             f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
             f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+    
+    
+############################
+def basic_array32_tracking_test():
+    
+    model  = powerline.ArrayModel32()
+
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
+    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25    ])
+    
+    pts = model.generate_test_data( p , partial_obs = True )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) , (15,60), (15,50) , (15,50)]
+    
+    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
+                1.0 , 1.0 , 2 , 501 , -200 , 200 , model.p2r_w ] 
+    
+    
+    for i in range(500):
+        
+        pts = model.generate_test_data( p , partial_obs = True )
+        
+        plot.update_pts( pts )
+    
+        start_time = time.time()
+        
+        func = lambda p: powerline.J(p, pts, p_hat, params)
+    
+        
+        res = minimize( func,
+                        p_hat, 
+                        method='SLSQP',  
+                        bounds=bounds, 
+                        #constraints=constraints,  
+                        # callback=plot.update_estimation, 
+                        options={'disp':True,'maxiter':500})
+        
+        p_hat = res.x
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( f" Optimzation completed in : { time.time() - start_time } sec \n"     
+                f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
+                f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+
+############################
+def hard_array32_tracking_test():
+    
+    model  = powerline.ArrayModel32()
+
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
+    p_hat  =  np.array([   0,   0,   0, 1.2, 500, 40.  , 25.  , 25    ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -50, n_out = 10 ,
+                                         center = [0,0,0] , w_o = 20 )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    bounds = [ (0,200), (0,200) , (0,200) , (0.5,1.5) , (100,2000) , (30,60), (25,25) , (25,60)]
+    
+    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
+                1.0 , 1.0 , 2 , 501 , -200 , 200, model.p2r_w ] 
+    
+    
+    for i in range(500):
+        
+        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                             x_min = -100, x_max = -70, n_out = 10 ,
+                                             center = [-50,-50,-50] , w_o = 10 )
+        
+        plot.update_pts( pts )
+    
+        start_time = time.time()
+        
+        func = lambda p: powerline.J(p, pts, p_hat, params)
+    
+        
+        res = minimize( func,
+                        p_hat, 
+                        method='SLSQP',  
+                        bounds=bounds, 
+                        #constraints=constraints,  
+                        # callback=plot.update_estimation, 
+                        options={'disp':True,'maxiter':500})
+        
+        p_hat = res.x
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( f" Optimzation completed in : { time.time() - start_time } sec \n"     
+                f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n" + 
+                f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+
+############################
+def hard_array32_tracking_local_minima_analysis( model =  powerline.ArrayModel32() ):
+    
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
+    p_hat  =  np.array([ 3.56, 26.8, 25.82, 1.05, 499.95, 44.12, 25.00, 28.1 ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -70, n_out = 10 ,
+                                         center = [-50,-50,-50] , w_o = 10 )
+    
+    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
+                1.0 , 1.0 , 2 , 501 , -200 , 200, model.p2r_w ] 
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    
+    n = 200
+    zs = np.linspace( -100 , 100, n )
+    cs = np.zeros(n)
+    
+    
+    for i in range(n):
+        
+        p_hat[2] = p[2] + zs[i]
+        
+        cs[i]    = powerline.J( p_hat, pts, p_hat, params)
+    
+        plot.update_estimation( p_hat )
+        
+    
+    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
+    
+    ax = [ax]
+    ax[0].plot( zs , cs  )
+    ax[0].set_xlabel( 'z_hat', fontsize = 5)
+    ax[0].set_ylabel( 'J(p)', fontsize = 5)
+    ax[0].grid(True)
+    ax[0].legend()
+    ax[0].tick_params( labelsize = 5 )
 
 
+############################
+def estimator_test():
+    
+    
+    model  = powerline.ArrayModel32()
 
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
+    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 49.  , 29.  , 49    ])
+    
+    pts = model.generate_test_data( p , partial_obs = True )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
+    
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    for i in range(500):
+        
+        pts = model.generate_test_data( p , partial_obs = True )
+        
+        plot.update_pts( pts )
+    
+        p_hat  = estimator.solve( pts , p_hat ) 
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+############################
+def scan_z_test_test( zscan = True ):
+    
+    model  = powerline.ArrayModel32()
+    
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
+    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 25.  , 49  ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -50, n_out = 5 ,
+                                         center = [0,0,0] , w_o = 20 )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
+    
+    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    
+    for i in range(50):
+        
+        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                             x_min = -100, x_max = -70, n_out = 5 ,
+                                             center = [-50,-50,-50] , w_o = 10 )
+        
+        plot.update_pts( pts )
+    
+        if zscan:
+            p_hat  = estimator.solve_zscan( pts , p_hat ) 
+            
+        else:
+            p_hat  = estimator.solve( pts , p_hat )
+            
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+############################
+def cost_shape_plot( model =  powerline.ArrayModel32() ):
+    
+    p_hat =  np.array([  0,  0, 0, 0.0,  500, 5.  , 3  , 5  ])
+    p     =  np.array([  0,  0, 0, 0.0,  500, 5.  , 3. , 5 ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                         x_min = -100, x_max = -50, n_out = 10 ,
+                                         center = [0,0,0] , w_o = 20 )
+    
+    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
+                1.0 , 1.0 , 2 , 25 , -20 , 20, model.p2r_w ] 
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    
+    n = 100
+    zs = np.linspace( -25 , 25, n )
+    cs = np.zeros(n)
+    
+    
+    for i in range(n):
+        
+        p_hat[2] = zs[i]
+        
+        cs[i]    = powerline.J( p_hat, pts, p_hat, params)
+    
+        plot.update_estimation( p_hat )
+        
+    
+    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
+    
+    ax = [ax]
+    ax[0].plot( zs , cs  )
+    ax[0].set_xlabel( 'z_hat', fontsize = 5)
+    ax[0].set_ylabel( 'J(p)', fontsize = 5)
+    ax[0].grid(True)
+    ax[0].legend()
+    ax[0].tick_params( labelsize = 5 )
+    
+    
 
 '''
 #################################################################
@@ -130,7 +391,21 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_3lines_convergence_test()
+    # basic_array3_convergence_test()
     
-    basic_32lines_convergence_test()
+    # basic_array32_convergence_test()
+    
+    # basic_array32_tracking_test()
+    
+    hard_array32_tracking_test()
+    
+    # hard_array32_tracking_local_minima_analysis()
+    
+    # estimator_test()
+    
+    # scan_z_test_test( False )
+    
+    # scan_z_test_test( True )
+    
+    # cost_shape_plot()
 

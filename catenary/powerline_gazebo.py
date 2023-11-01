@@ -353,7 +353,7 @@ if __name__ == "__main__":
     
     # basic_convergence_test()
     
-    hard_tracking_test()
+    # hard_tracking_test()
     
     cost_shape_plot()
 

@@ -173,7 +173,7 @@ class ArrayModel:
         
         for i in range( self.q ):
             
-            r0_c = np.hstack( ( delta[:,0] , np.array([1.0])  ) )
+            r0_c = np.hstack( ( delta[:,i] , np.array([1.0])  ) )
             
             r0_w = catenary.w_T_c( phi, x_0, y_0, z_0 ) @ r0_c
         
@@ -198,9 +198,12 @@ class ArrayModel:
         #outliers
         pts  = catenary.outliers( n_out, center , w_o )
         
+        # Individual catenary parameters
+        ps = self.p2ps( p )
+        
         for i in range( self.q ):
             
-            p_line = self.p2ps( p )[:,i]  # parameter vector of ith line
+            p_line = ps[:,i]  # parameter vector of ith line
         
             if partial_obs:
                 
@@ -221,6 +224,72 @@ class ArrayModel:
     
 ###############################################################################
 class ArrayModel32( ArrayModel ):
+    """
+    ArrayModel 32 is a model for 5 catenary with 3 offsets variables
+    
+    ----------------------------------------------------------
+    
+                                d2
+                             |---->
+     ^                 3          4 
+     |          
+     h          
+     |
+     _          0            1             2 
+       
+                                  d1
+                            |------------->          
+    
+    ----------------------------------------------------------
+    
+    p      :  8 x 1 array of parameters 
+    
+        x_0 : x translation of local frame orign in world frame
+        y_0 : y translation of local frame orign in world frame
+        z_0 : z translation of local frame orign in world frame
+        phi : z rotation of local frame basis in in world frame
+        a   : sag parameter
+        d1  : horizontal distance between power lines
+        d2  : horizontal distance between guard cable
+        h   : vertical distance between power lines and guard cables
+        
+    """
+    
+    #################################################
+    def __init__(self):
+
+        ArrayModel.__init__( self, l = 8 , q = 5 )
+        
+        
+    ############################
+    def p2deltas( self, p ):
+        """ 
+        Compute the translation vector of each individual catenary model origin
+        with respect to the model origin in the model frame
+        """
+        
+        delta = np.zeros((3, self.q ))
+
+        d1  = p[5]
+        d2  = p[6]
+        h   = p[7]
+        
+        # Offset in local catenary frame
+        
+        delta[1,0] = -d1    # y offset of cable 0
+        delta[1,2] = +d1    # y offset of cable 2
+        delta[1,3] = -d2    # y offset of cable 3
+        delta[1,4] = +d2    # y offset of cable 4
+        
+        delta[2,3] = +h    # z offset of cable 3
+        delta[2,4] = +h    # z offset of cable 4
+        
+        return delta
+    
+    
+    
+###############################################################################
+class ArrayModel2221( ArrayModel ):
     """
     ArrayModel 32 is a model for 5 catenary with 3 offsets variables
     
@@ -420,8 +489,8 @@ class ArrayEstimator:
         self.p_ub[4] = p_0[4] + 500
         self.p_lb[4] = 100
         # intercablw distance
-        self.p_ub[4:] = p_0[4:] + 2.0
-        self.p_lb[4:] = p_0[4:] - 2.0
+        self.p_ub[5:] = p_0[5:] + 2.0
+        self.p_lb[5:] = p_0[5:] - 2.0
         
         # default sampling parameters
         self.x_min     = -200
@@ -531,7 +600,7 @@ class ArrayEstimator:
         func   = lambda p: J(p, pts, p_init, param)
         
         n = 3
-        zs = np.linspace( -50 , 50,  n)
+        zs = np.linspace( -150 , 150,  n)
         ps = np.zeros((self.n_p,n))
         js = np.zeros(n)
         
@@ -674,98 +743,6 @@ class EstimationPlot:
         
 
 
-############################
-def estimator_test():
-    
-    from powerline32 import p2r_w
-    from powerline32 import generate_test_data
-    
-
-
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
-    
-    # p_ub   =
-    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 49.  , 25.  , 25    ])
-    # p_lb   =
-    
-    pts = generate_test_data( p , partial_obs = True )
-    
-    plot = EstimationPlot( p , p_hat , pts , p2r_w )
-    
-    estimator = ArrayEstimator( p2r_w , p_hat )
-    
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    
-    for i in range(500):
-        
-        pts = generate_test_data( p , partial_obs = True )
-        
-        plot.update_pts( pts )
-    
-        p_hat  = estimator.solve( pts , p_hat ) 
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
-
-
-############################
-def scan_z_test_test( zscan = True ):
-    
-    from powerline32 import p2r_w
-    from powerline32 import generate_test_data
-    
-
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
-    p_hat  =  np.array([   0,   0,   0, 1.2, 500, 51.  , 25.  , 49  ])
-    
-    pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 5 ,
-                                         center = [0,0,0] , w_o = 20 )
-    
-    plot = EstimationPlot( p , p_hat , pts , p2r_w )
-    
-    estimator = ArrayEstimator( p2r_w , p_hat )
-    
-    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    
-    
-    for i in range(50):
-        
-        pts = generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 5 ,
-                                             center = [-50,-50,-50] , w_o = 10 )
-        
-        plot.update_pts( pts )
-    
-        if zscan:
-            p_hat  = estimator.solve_zscan( pts , p_hat ) 
-            
-        else:
-            p_hat  = estimator.solve( pts , p_hat )
-            
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
-    
-
-
 '''
 #################################################################
 ##################          Main                         ########
@@ -776,36 +753,8 @@ def scan_z_test_test( zscan = True ):
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    # e = estimator_test()
+    pass
     
-    e = scan_z_test_test( False )
-    e = scan_z_test_test( True )
-    
-    # from powerline_gazebo import p2r_w
-    # from powerline_gazebo import generate_test_data
-    
-    # from scipy.optimize import minimize
-    # import time
-
-    # p      =  np.array([  1, -3, 4, 0.2,  500, 4.  , 4  , 9  ])
-    # p_init =  np.array([  0,  0, 0, 0.0, 1000, 5.  , 5. , 10 ])
-    
-    # pts = generate_test_data(  p , n_obs = 10 , x_min = 0, x_max = 20, w_l = 0.1,
-    #                         n_out = 10, center = [0,0,0] , w_o = 100,
-    #                         partial_obs = False )
-    
-    
-    # e = ArrayEstimator( p2r_w , p_init )
-    
-    # p_hat  = e.solve( pts , p_init )
-    # pts_in = e.get_array_group( p_hat , pts )
-    # target = e.is_target_aquired( p_hat , pts)
-    
-    # print('Target aquired is ', target)
-    
-    
-    # plot2 = EstimationPlot( p , p_hat , pts , p2r_w )
-    # plot2.add_pts( pts_in )
 
 
 
