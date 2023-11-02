@@ -633,17 +633,17 @@ if __name__ == "__main__":
     # plot_test()
     # # animation_test()
     
-    convergence_basic_test()
-    convergence_basic_test( method = 'x' )
-    convergence_basic_test( grad = True )
-    convergence_basic_test( method = 'x' , grad = True )
+    # convergence_basic_test()
+    # convergence_basic_test( method = 'x' )
+    # convergence_basic_test( grad = True )
+    # convergence_basic_test( method = 'x' , grad = True )
     
-    # # # tracking_basic_test()
-    tracking_basic_test( grad = True )
+    # # # # tracking_basic_test()
+    # tracking_basic_test( grad = True )
     
-    tracking_advanced_test()
+    # tracking_advanced_test()
     
-    grouping_test()
+    # grouping_test()
     
     speed_test()
     

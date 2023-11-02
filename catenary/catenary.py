@@ -375,7 +375,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
            eT_de_dp[1,:] = -e_min[1,:]
            eT_de_dp[2,:] = -e_min[2,:]
            eT_de_dp[3,:] = -( e_min[0,:] * ( - np.sin( phi ) * x ) + e_min[1,:] * ( + np.cos( phi ) * x ) )
-           eT_de_dp[4,:] = -e_min[2,:] * ( np.cosh( x / a ) - x / a * np.sinh( x / a ) - 1 )
+           eT_de_dp[4,:] = -e_min[2,:] * ( np.cosh( x / a ) - x / ( a ** 2) * np.sinh( x / a ) - 1 )
            
            # Norm grad
            dd_dp = eT_de_dp / d_min
@@ -428,7 +428,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
             eT_de_dp[1,:] = ey * -c + ez * de_dy0 
             eT_de_dp[2,:] = -ez
             eT_de_dp[3,:] = ey * ( c * ( x0 - x_w ) + s * ( y0 - y_w ) ) + ez * de_dphi
-            eT_de_dp[4,:] = -ez * ( np.cosh( x_c / a ) - x_c / a * np.sinh( x_c / a ) - 1 )
+            eT_de_dp[4,:] = -ez * ( np.cosh( x_c / a ) - x_c / ( a ** 2) * np.sinh( x_c / a ) - 1 )
             
             # Norm grad
             dd_dp = eT_de_dp / d_min
