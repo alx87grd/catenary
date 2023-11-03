@@ -34,30 +34,42 @@ pts5 = catenary.generate_test_data( p_5 , n_obs = 10, w_l = 0.01 , n_out = 1, ce
 
 pts = np.hstack( ( pts1 , pts2 , pts3 , pts4 , pts5 ))
 
-p      =  np.array([  28.0, 50.0, 77.0, 0.0, 53, 20.0, 15.0, 20.0 ])
+p_true =  np.array([  28.0, 50.0, 77.0, 0.0, 53, 20.0, 15.0, 20.0 ])
 
-p_init =  np.array([  27.0, 49.0, 76.0, 0.1, 50, 19., 14., 19.0 ])
+p_hat  =  np.array([  27.0, 49.0, 76.0, 0.1, 50, 19., 14., 19.0 ])
+# p_hat  =  np.array([  27.0, 49.0, 6.0, 2.1, 150, 1., 1., 1.0 ])
 
 bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , (15,30)]
 
  
 
-plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
+# plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
 
-
+p     = p_hat
+p_nom = np.array([  0.,0,0,0,0,0,0,0 ])
 
 m   = pts.shape[1]
 ind = np.arange(0,m)
+
+n_p = model.l
     
 # generate a list of sample point on the model curve
 n        = 100
-x_min    = -40
-x_max    = +40
+x_min    = -200
+x_max    = +200
 
-r_model_flat  = model.p2r_w( p_init, x_min , x_max , n )[0]
+R      = np.ones( ( m ) ) * 1 / m 
+Q      = np.diag( np.ones( (n_p) ) )
+
+b      = 1.0
+l      = 1.0
+power  = 2.0
+
+# generate a list of sample point on the model curve
+r_flat, r , xs = model.p2r_w( p , x_min , x_max , n )
 
 # Vectors between measurements and all model pts
-e_flat  = pts[:,:,np.newaxis] - r_model_flat[:,np.newaxis,:]
+e_flat  = pts[:,:,np.newaxis] - r_flat[:,np.newaxis,:]
 
 # Distances between measurements and model sample pts
 d_flat = np.linalg.norm( e_flat , axis = 0 )
@@ -65,31 +77,105 @@ d_flat = np.linalg.norm( e_flat , axis = 0 )
 # Minimum distances to model for all measurements
 d_min_flat = d_flat.min( axis = 1 )
 
-r_model  = model.p2r_w( p_init, x_min , x_max , n )[1]
-
-# Vectors between measurements and all model pts
-e = pts[:,:,np.newaxis,np.newaxis] - r_model[:,np.newaxis,:,:]
-
+   
+# Vectors between measurements and all model pts of all cables
+E = pts[:,:,np.newaxis,np.newaxis] - r[:,np.newaxis,:,:]
+   
 # Distances between measurements and model sample pts
-d = np.linalg.norm( e , axis = 0 )
+D = np.linalg.norm( E , axis = 0 )
+   
+# Minimum distances to all cable and closet model points index j
+D_min = D.min( axis = 1 )
+j_min = D.argmin( axis = 1 )
+   
+# Closest cable
+k  = D_min.argmin( axis = 1 )  # closest cable index
+j  = j_min[ ind , k ]          # closest point index on closest cable
+xj = xs[ j ]                   # local x of closest pts on the model
+d  = D[ ind , j , k ]          # Closest distnace
+e  = E[ : , ind , j , k ]        # Closest error vector
 
-# # Minimum distances to all cable and closet model points index j
-d_min = d.min( axis = 1 )
-j_min = d.argmin( axis = 1 )
 
-d_min_min = d_min.min( axis = 1 )
-k         = d_min.argmin( axis = 1 )  # closest cable index
-j         = j_min[ ind , k ]          # closest point indev on closest cable
+# d2 = powerline.find_closest_distance( p_init , pts , model.p2r_w )
+# (d3,j3,k3) = powerline.find_closest_distance_cable_point( p_init , pts , model.p2r_w )
 
-d_min_min2 = d[ ind , j , k ]
+# params = [ 'sample' , np.diag([ 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0]) ,
+#             1.0 , 1.0 , 2 , 200 , -200 , 200, model.p2r_w ]
+
+# J1 = powerline.J(p_init, pts, p, params)
+
+# J2 = powerline.J2(p_init, pts, p, model.p2r_w )
+
+# print( J1 , J2 )
 
 
-a = powerline.find_closest_distance( p_init , pts , model.p2r_w )
-(b,c,d) = powerline.find_closest_distance_cable_point( p_init , pts , model.p2r_w )
+# Array offsets
+deltas      = model.p2deltas( p )
+deltas_grad = model.deltas_grad()
 
-params = [ 'sample' , np.diag([ 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0]) ,
-            1.0 , 1.0 , 2 , 200 , -200 , 200, model.p2r_w ]
+xk = deltas[0,k]
+yk = deltas[1,k]
+zk = deltas[2,k]
 
-J1 = powerline.J(p_init, pts, p, params)
+x0  = p[0]
+y0  = p[1]
+z0  = p[2]
+phi = p[3]
+a   = p[4]
 
-J2 = powerline.J2(p_init, pts, p, model.p2r_w )
+# pre-computation
+s  = np.sin( phi )
+c  = np.cos( phi )
+sh = np.sinh( xj / a )
+ch = np.cosh( xj / a )
+ex = e[0,:]
+ey = e[1,:]
+ez = e[2,:]
+
+# Error Grad for each pts
+eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
+
+eT_de_dp[0,:] = -ex
+eT_de_dp[1,:] = -ey
+eT_de_dp[2,:] = -ez
+eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
+                   ey * (-( xj + xk ) * c + yk * s ) ) 
+eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
+
+
+
+# for all offset parameters
+for i_p in range(5, n_p):
+    
+    dxk_dp = deltas_grad[0,k,i_p-5]
+    dyk_dp = deltas_grad[1,k,i_p-5]
+    dzk_dp = deltas_grad[2,k,i_p-5]
+    
+    
+    eT_de_dp[i_p,:] = ( ( -c * dxk_dp + s * dyk_dp ) + 
+                        ( -s * dxk_dp - c * dyk_dp ) +
+                        ( - dzk_dp                 ) )
+    
+
+# Norm grad
+dd_dp = eT_de_dp / d
+
+# Smoothing grad
+dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
+
+dc_dp = dc_dd * dd_dp
+
+# Regulation
+p_e = p_nom - p
+
+# Total cost with regulation
+dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
+
+print( dJ_dp )
+
+dJ2 = powerline.dJ2_dp( p, pts, p_nom, model , num = False )
+# print( dJ2 )
+
+dJ1 = powerline.dJ2_dp( p, pts, p_nom, model , num = True )
+print( dJ1 )
+

@@ -49,11 +49,6 @@ class ArrayModel:
         """ 
         Compute the translation vector of each individual catenary model origin
         with respect to the model origin in the model frame
-        """
-        
-        delta = np.zeros((3, self.q ))
-        
-        """
         
         this is a model for 3 catenary with  equal horizontal d1 offset
         
@@ -70,10 +65,25 @@ class ArrayModel:
         
         d1  = p[5]
         
-        delta[1,0] = -d1    # y offset of cable 0
-        delta[1,2] = +d1    # y offset of cable 2
+        delta = np.array([[ 0.,  0.,  0. ],
+                          [-d1,  0.,  +d1],
+                          [ 0.,  0.,  0. ]])
         
         return delta
+    
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+        
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+        
+        grad[:,:,0] = np.array([[ 0.,  0.,  0. ],
+                                [-1.,  0.,  +1.],
+                                [ 0.,  0.,  0. ]])
+        
+        return grad
         
         
     ############################
@@ -287,6 +297,28 @@ class ArrayModel32( ArrayModel ):
         
         return delta
     
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+        
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+        
+        grad[:,:,0] = np.array([[ 0.,  0.,  0. ,  0.,  0.],
+                                [-1.,  0.,  +1.,  0.,  0.],
+                                [ 0.,  0.,  0. ,  0.,  0.]])
+        
+        grad[:,:,1] = np.array([[ 0.,  0.,  0. ,  0.,  0.],
+                                [ 0.,  0.,  0. , -1., +1.],
+                                [ 0.,  0.,  0. ,  0.,  0.]])
+        
+        grad[:,:,2] = np.array([[ 0.,  0.,  0. ,  0.,  0.],
+                                [ 0.,  0.,  0. ,  0.,  0.],
+                                [ 0.,  0.,  0. , +1., +1.]])
+        
+        return grad
+    
     
     
 ###############################################################################
@@ -375,6 +407,17 @@ class ArrayModel2221( ArrayModel ):
         return delta
     
     
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+        
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+        
+        raise NotImplementedError
+    
+    
 ###############################################################################
 class ArrayModelConstant2221( ArrayModel ):
     """
@@ -456,6 +499,16 @@ class ArrayModelConstant2221( ArrayModel ):
         delta[2,6] = +h1+h1+h3    # z offset of cable 2
         
         return delta
+    
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+        
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+        
+        raise NotImplementedError
     
 
 
@@ -651,6 +704,172 @@ def J2( p , pts , p_nom , param  ):
     cost = R.T @ c + p_e.T @ Q @ p_e
     
     return cost
+
+
+######################################################
+def dJ2_dp( p , pts , p_nom , param , num = False ):
+    """ 
+    
+    Gradient of J with respect to parameters p
+    
+    inputs
+    --------
+    see J function doc
+    
+    outputs
+    ----------
+    dJ_dp : 1 x n_p gradient evaluated at p
+    
+    """
+    
+    model = param
+    
+    n_p    = p.shape[0]    # number of model parameters
+
+    if num:
+        
+        dJ_dp = np.zeros( n_p )
+        dp    =  0.001 * np.ones( n_p )
+        
+        for i in range( n_p ):
+        
+            pp    = p.copy()
+            pm    = p.copy()
+            pp[i] = p[i] + dp[i]
+            pm[i] = p[i] - dp[i]
+            cp    = J2( pp , pts , p_nom , model.p2r_w )
+            cm    = J2( pm , pts , p_nom , model.p2r_w )
+            
+            dJ_dp[i] = ( cp - cm ) / ( 2.0 * dp[i] )
+    
+    else:
+        
+        #########################
+        # Analytical gratient
+        #########################
+        
+        m      = pts.shape[1]  # number of measurements
+        
+        
+        n_p    = p.shape[0]    # number of model parameters
+        
+        R      = np.ones( ( m ) ) * 1 / m 
+        Q      = np.diag( np.ones( (n_p) ) )
+        
+        b      = 1.0
+        l      = 1.0
+        power  = 2.0
+        
+        method = 'sample'
+        
+        n      = 100           # number of model pts
+        x_min  = -200
+        x_max  = +200
+        
+        
+        
+        x0  = p[0]
+        y0  = p[1]
+        z0  = p[2]
+        phi = p[3]
+        a   = p[4]
+        
+        if method == 'sample':
+            
+            # number of measurements
+            m   = pts.shape[1]
+            ind = np.arange(0,m)
+               
+            # generate a list of sample point on the model curve
+            r_flat, r , xs = model.p2r_w( p, x_min , x_max , n )
+               
+            # Vectors between measurements and all model pts of all cables
+            E = pts[:,:,np.newaxis,np.newaxis] - r[:,np.newaxis,:,:]
+               
+            # Distances between measurements and model sample pts
+            D = np.linalg.norm( E , axis = 0 )
+               
+            # Minimum distances to all cable and closet model points index j
+            D_min = D.min( axis = 1 )
+            j_min = D.argmin( axis = 1 )
+               
+            # Closest cable
+            k  = D_min.argmin( axis = 1 )  # closest cable index
+            j  = j_min[ ind , k ]          # closest point index on closest cable
+            xj = xs[ j ]                   # local x of closest pts on the model
+            d  = D[ ind , j , k ]          # Closest distnace
+            e  = E[ : , ind , j , k ]      # Closest error vector
+            
+            # Array offsets
+            deltas      = model.p2deltas( p )
+            deltas_grad = model.deltas_grad()
+            
+            xk = deltas[0,k]
+            yk = deltas[1,k]
+            zk = deltas[2,k]
+            
+            xk = deltas[0,k]
+            yk = deltas[1,k]
+            zk = deltas[2,k]
+            
+            # pre-computation
+            s  = np.sin( phi )
+            c  = np.cos( phi )
+            sh = np.sinh( xj / a )
+            ch = np.cosh( xj / a )
+            ex = e[0,:]
+            ey = e[1,:]
+            ez = e[2,:]
+    
+            # Error Grad for each pts
+            eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
+            
+            eT_de_dp[0,:] = -ex
+            eT_de_dp[1,:] = -ey
+            eT_de_dp[2,:] = -ez
+            eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
+                               ey * (-( xj + xk ) * c + yk * s ) ) 
+            eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
+            
+            
+            
+            # for all offset parameters
+            for i_p in range(5, n_p):
+                
+                dxk_dp = deltas_grad[0,k,i_p-5]
+                dyk_dp = deltas_grad[1,k,i_p-5]
+                dzk_dp = deltas_grad[2,k,i_p-5]
+                
+                eT_de_dp[i_p,:] = ( ( -c * dxk_dp + s * dyk_dp ) + 
+                                    ( -s * dxk_dp - c * dyk_dp ) +
+                                    ( - dzk_dp                 ) )
+                
+                
+            # Norm grad
+            dd_dp = eT_de_dp / d
+           
+            
+        elif method == 'x':
+            
+            raise NotImplementedError
+        
+        ################################
+        
+        # Smoothing grad
+        dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
+        
+        dc_dp = dc_dd * dd_dp
+    
+        # Regulation
+        p_e = p_nom - p
+        
+        # Total cost with regulation
+        dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
+    
+    return dJ_dp
+
+
+
 
 
 ############################
