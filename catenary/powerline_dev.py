@@ -40,8 +40,7 @@ p_init =  np.array([  27.0, 49.0, 76.0, 0.1, 50, 19., 14., 19.0 ])
 
 bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , (15,30)]
 
-params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0]) ,
-            1.0 , 1.0 , 2 , 55 , -50 , 50, model.p2r_w ] 
+ 
 
 plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
 
@@ -83,3 +82,14 @@ k         = d_min.argmin( axis = 1 )  # closest cable index
 j         = j_min[ ind , k ]          # closest point indev on closest cable
 
 d_min_min2 = d[ ind , j , k ]
+
+
+a = powerline.find_closest_distance( p_init , pts , model.p2r_w )
+(b,c,d) = powerline.find_closest_distance_cable_point( p_init , pts , model.p2r_w )
+
+params = [ 'sample' , np.diag([ 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0]) ,
+            1.0 , 1.0 , 2 , 200 , -200 , 200, model.p2r_w ]
+
+J1 = powerline.J(p_init, pts, p, params)
+
+J2 = powerline.J2(p_init, pts, p, model.p2r_w )

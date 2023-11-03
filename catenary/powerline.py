@@ -463,13 +463,55 @@ class ArrayModelConstant2221( ArrayModel ):
 # Optimization
 # ###########################
 
-default_model = ArrayModel()
+#######################################
+def find_closest_distance( p , pts , p2r_w , x_min = -200 , x_max = +200 , n = 100 ):
+    
+    r_model_flat  = p2r_w( p, x_min , x_max , n )[0]
+   
+    # Vectors between measurements and all model pts
+    e_flat  = pts[:,:,np.newaxis] - r_model_flat[:,np.newaxis,:]
+   
+    # Distances between measurements and model sample pts
+    d_flat = np.linalg.norm( e_flat , axis = 0 )
+   
+    # Minimum distances to model for all measurements
+    d_min_flat = d_flat.min( axis = 1 )
+    
+    return d_min_flat
 
-default_cost_param = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                        1.0 , 1.0 , 2 , 1000 , -200 , 200, default_model.p2r_w ] 
+#######################################
+def find_closest_distance_cable_point( p , pts , p2r_w , x_min = -200 , x_max = +200 , n = 100 ):
+   
+    # number of measurements
+    m   = pts.shape[1]
+    ind = np.arange(0,m)
+   
+    r_model  = p2r_w( p , x_min , x_max , n )[1]
+   
+    # Vectors between measurements and all model pts of all cables
+    e = pts[:,:,np.newaxis,np.newaxis] - r_model[:,np.newaxis,:,:]
+   
+    # Distances between measurements and model sample pts
+    d = np.linalg.norm( e , axis = 0 )
+   
+    # Minimum distances to all cable and closet model points index j
+    d_min = d.min( axis = 1 )
+    j_min = d.argmin( axis = 1 )
+   
+    # Closest cable
+    k = d_min.argmin( axis = 1 )  # closest cable index
+    j = j_min[ ind , k ]          # closest point index on closest cable
+   
+    # d_min_min = d_min.min( axis = 1 )
+    d_min_min = d[ ind , j , k ]   # Alternative computation 
+    
+    return ( d_min_min  , j , k )
 
-############################
-def J( p , pts , p_nom , param = default_cost_param ):
+
+
+
+########################################################
+def J( p , pts , p_nom , param ):
     """ 
     Cost function for curve fitting a catenary model on a point cloud
     
@@ -557,41 +599,39 @@ def J( p , pts , p_nom , param = default_cost_param ):
 
 
 
-
-
-############################
-def J2( p , pts , p_nom , param = default_cost_param ):
+###############################################################################
+# New cost function
+###############################################################################
+def J2( p , pts , p_nom , param  ):
     """ 
     
     """
     
     m      = pts.shape[1]  # number of measurements
     
-    method = param[0]
-    Q      = param[1]
-    b      = param[2]
-    l      = param[3]
-    power  = param[4]
-    n      = param[5]
-    x_min  = param[6]
-    x_max  = param[7]
-    p2r_w  = param[8]
+    n_p    = p.shape[0]    # number of model parameters
+    
+    p2r_w  = param
+    
+    R      = np.ones( ( m ) ) * 1 / m 
+    Q      = np.diag( np.ones( (n_p) ) )
+    
+    b      = 1.0
+    l      = 1.0
+    power  = 2.0
+    
+    method = 'sample'
+    
+    n      = 200           # number of model pts
+    x_min  = -200
+    x_max  = +200
     
     ###################################################
     if method == 'sample':
         """ data association is sampled-based """
-    
-        # generate a list of sample point on the model curve
-        r_model  = p2r_w( p, x_min , x_max , n )[0]
-        
-        # Vectors between measurements and all model pts
-        e  = pts[:,:,np.newaxis] - r_model[:,np.newaxis,:]
-        
-        # Distances between measurements and model sample pts
-        d = np.linalg.norm( e , axis = 0 )
         
         # Minimum distances to model for all measurements
-        d_min = d.min( axis = 1 )
+        d_min = find_closest_distance( p , pts , p2r_w , x_min ,  x_max , n )
     
     ###################################################
     elif method == 'x':
@@ -604,14 +644,11 @@ def J2( p , pts , p_nom , param = default_cost_param ):
     # Cost shaping function
     c = catenary.lorentzian( d_min , l , power , b )
     
-    # Average costs per measurement plus regulation
-    pts_cost = c.sum() / m 
-    
     # Regulation
     p_e = p_nom - p
     
     # Total cost with regulation
-    cost = pts_cost + p_e.T @ Q @ p_e
+    cost = R.T @ c + p_e.T @ Q @ p_e
     
     return cost
 
