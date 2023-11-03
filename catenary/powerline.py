@@ -124,6 +124,7 @@ class ArrayModel:
         r_c  = np.zeros((4,n,self.q))
         r_w  = np.zeros((4,n,self.q))
         
+        # Foward kinematic for all lines in the array
         for i in range(self.q):
         
             r_c[0,:,i] = x_c + delta[0,i]
@@ -527,10 +528,70 @@ def J( p , pts , p_nom , param = default_cost_param ):
         """ data association is sampled-based """
     
         # generate a list of sample point on the model curve
-        r_model  = p2r_w( p, n , x_min , x_max )[0]
+        r_model  = p2r_w( p, x_min , x_max , n )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )
+    
+    ###################################################
+    elif method == 'x':
+        """ data association is based on local x-coord in cat frame """
+        
+        raise NotImplementedError
+        
+    ###################################################
+        
+    # Cost shaping function
+    c = catenary.lorentzian( d_min , l , power , b )
+    
+    # Average costs per measurement plus regulation
+    pts_cost = c.sum() / m 
+    
+    # Regulation
+    p_e = p_nom - p
+    
+    # Total cost with regulation
+    cost = pts_cost + p_e.T @ Q @ p_e
+    
+    return cost
+
+
+
+
+
+############################
+def J2( p , pts , p_nom , param = default_cost_param ):
+    """ 
+    
+    """
+    
+    m      = pts.shape[1]  # number of measurements
+    
+    method = param[0]
+    Q      = param[1]
+    b      = param[2]
+    l      = param[3]
+    power  = param[4]
+    n      = param[5]
+    x_min  = param[6]
+    x_max  = param[7]
+    p2r_w  = param[8]
+    
+    ###################################################
+    if method == 'sample':
+        """ data association is sampled-based """
+    
+        # generate a list of sample point on the model curve
+        r_model  = p2r_w( p, x_min , x_max , n )[0]
+        
+        # Vectors between measurements and all model pts
+        e  = pts[:,:,np.newaxis] - r_model[:,np.newaxis,:]
+        
+        # Distances between measurements and model sample pts
+        d = np.linalg.norm( e , axis = 0 )
+        
+        # Minimum distances to model for all measurements
+        d_min = d.min( axis = 1 )
     
     ###################################################
     elif method == 'x':
@@ -597,7 +658,7 @@ class ArrayEstimator:
         # default sampling parameters
         self.x_min     = -200
         self.x_max     = +200
-        self.n_sample  =  501
+        self.n_sample  =  201
         
         # default cost function parameters
         self.method = 'sample'
@@ -618,7 +679,7 @@ class ArrayEstimator:
         m      = pts.shape[1]
         
         # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p, self.n_sample , self.x_min , self.x_max )[0]
+        r_model  = self.p2r_w( p,  self.x_min , self.x_max , self.n_sample  )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )
@@ -633,7 +694,7 @@ class ArrayEstimator:
     def get_array_group( self, p , pts ):
         
         # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p, self.n_sample , self.x_min , self.x_max )[0]
+        r_model  = self.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )
@@ -695,50 +756,18 @@ class ArrayEstimator:
     
     
     #####################################################
-    def solve_zscan( self, pts , p_init , callback = None ):
+    def solve_with_translation_search( self, pts , p_init , n = 10 , var = 10 , callback = None ):
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters()
         func   = lambda p: J(p, pts, p_init, param)
-        
-        n = 3
-        zs = np.linspace( -150 , 150,  n)
-        ps = np.zeros((self.n_p,n))
-        js = np.zeros(n)
-        
-        for i in range(n):
-            
-            p    = p_init
-            p[2] = p_init[2] + zs[i] # new z
-        
-            res = minimize( func,
-                            p, 
-                            method='SLSQP',  
-                            bounds=bounds, 
-                            #constraints=constraints,  
-                            callback=callback, 
-                            options={'disp':False,'maxiter':500})
-            
-            ps[:,i] = res.x
-            js[i]   = res.fun
-            
-        i_star = js.argmin()
-        p_hat  = ps[:,i_star]
-        
-        return p_hat
-    
-    #####################################################
-    def solve_with_translation_search( self, pts , p_init , var = 10 , callback = None ):
-        
-        bounds = self.get_bounds()
-        param  = self.get_cost_parameters()
-        func   = lambda p: J(p, pts, p_init, param)
-        
-        n = 10
         
         # variation to params
         rng    = np.random.default_rng( seed = None )
         deltas = var * rng.standard_normal(( 3 , n ))
+        
+        # keep original solution
+        deltas[:,0] = np.zeros((3))
         
         # solutions
         ps = np.zeros(( self.n_p , n ))
@@ -770,7 +799,7 @@ class ArrayEstimator:
     def is_target_aquired( self, p , pts , ):
         
         # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p, self.n_sample , self.x_min , self.x_max )[0]
+        r_model  = self.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )

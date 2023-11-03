@@ -72,7 +72,7 @@ def w_T_c( phi , x , y , z):
 
 
 ############################
-def p2r_w( p , x_min = -200, x_max = 200 , n = 400, ):
+def p2r_w( p , x_min = -200, x_max = 200 , n = 200, ):
     """ 
     Compute n pts coord in world frame based on a parameter vector
     
@@ -244,7 +244,7 @@ def J( p , pts , p_nom , param = default_cost_param ):
         """ data association is sampled-based """
     
         # generate a list of sample point on the model curve
-        r_model  = p2r_w( p, n , x_min , x_max )[0]
+        r_model  = p2r_w( p, x_min , x_max , n )[0]
         
         # Minimum distances to model for all measurements
         d_min = compute_d_min( pts , r_model )
@@ -351,7 +351,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
         if method == 'sample':
         
            # generate a list of sample point on the model curve
-           r_hat, x_l = p2r_w( p, n , x_min , x_max )
+           r_hat, x_l = p2r_w( p, x_min , x_max , n )
 
            # Vectors between measurements and model sample pts
            e = pts[:,:,np.newaxis] - r_hat[:,np.newaxis,:]
@@ -460,7 +460,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
 def get_catanery_group( p , pts , d_th = 1.0 , n_sample = 1000 , x_min = -200, x_max = 200):
     
     # generate a list of sample point on the model curve
-    r_model  = p2r_w( p, n_sample , x_min , x_max )[0]
+    r_model  = p2r_w( p,  x_min , x_max , n_sample )[0]
     
     # Minimum distances to model for all measurements
     d_min = compute_d_min( pts , r_model )

@@ -272,7 +272,7 @@ def basic_array2221_tracking_test():
     params = [ 'sample' , 2 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
                                         0.0001 , 0.002 , 0.002 , 0.002 , 
                                         0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 501 , -200 , 200 , model.p2r_w ] 
+              1.0 , 1.0 , 2 , 201 , -200 , 200 , model.p2r_w ] 
     
     
     for i in range(50):
@@ -324,7 +324,7 @@ def hard_array2221_tracking_test():
     params = [ 'sample' , 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
                                         0.0001 , 0.002 , 0.002 , 0.002 , 
                                         0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 501 , -200 , 200 , model.p2r_w ] 
+              1.0 , 1.0 , 2 , 201 , -200 , 200 , model.p2r_w ] 
     
     
     for i in range(100):
@@ -377,7 +377,7 @@ def hard_arrayconstant2221_tracking_test():
               (3,6), (3,6) , (5,15) ]
     
     params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
-                1.0 , 1.0 , 2 , 501 , -200 , 200, model.p2r_w ] 
+                1.0 , 1.0 , 2 , 201 , -200 , 200, model.p2r_w ] 
     
     
     for i in range(500):
@@ -492,52 +492,6 @@ def basic_array32_estimator_test():
     return estimator
 
 
-############################
-def scan_z_test_test( zscan = True ):
-    
-    model  = powerline.ArrayModel32()
-    
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
-    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 25.  , 49  ])
-    
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 5 ,
-                                         center = [0,0,0] , w_o = 20 )
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
-    
-    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    
-    
-    for i in range(50):
-        
-        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 5 ,
-                                             center = [-50,-50,-50] , w_o = 10 )
-        
-        plot.update_pts( pts )
-    
-        if zscan:
-            p_hat  = estimator.solve_zscan( pts , p_hat ) 
-            
-        else:
-            p_hat  = estimator.solve( pts , p_hat )
-            
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
-
 
 
 ############################
@@ -583,7 +537,7 @@ def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
     
 
 ############################
-def translation_search_test( search = True , var = 10 ):
+def translation_search_test( search = True , n = 3 , var = 10 ):
     
     model  = powerline.ArrayModel32()
     
@@ -611,7 +565,58 @@ def translation_search_test( search = True , var = 10 ):
         plot.update_pts( pts )
     
         if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , var )
+            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
+            
+        else:
+            p_hat  = estimator.solve( pts , p_hat )
+            
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+############################
+def hard_test( search = True , n = 2, var = 10 ):
+    
+    model  = powerline.ArrayModel32()
+    
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
+    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 26.  , 49  ])
+    
+    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                    w_l = 0.2 , x_min = -100, x_max = -50, 
+                                    n_out = 5 , center = [0,0,0] , w_o = 20 )
+    
+    pts = pts[:,:30] #remover one cable
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
+    
+    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    
+    for i in range(250):
+        
+        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
+                                             x_min = -100, x_max = -70, n_out = 5 ,
+                                             center = [-50,-50,-50] , w_o = 10 )
+        
+        pts = pts[:,:30] #remover one cable
+        
+        plot.update_pts( pts )
+    
+        if search:
+            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
             
         else:
             p_hat  = estimator.solve( pts , p_hat )
@@ -661,12 +666,10 @@ if __name__ == "__main__":
     
     # basic_array32_estimator_test()
     
-    # scan_z_test_test( False )
-    
-    # scan_z_test_test( True )
-    
     # array32_cost_shape_analysis()
     
-    translation_search_test( False )
-    translation_search_test( True )
+    # translation_search_test( False )
+    # translation_search_test( True )
+    
+    hard_test()
 
