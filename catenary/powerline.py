@@ -667,7 +667,7 @@ def J2( p , pts , p_nom , param  ):
     p2r_w  = param
     
     R      = np.ones( ( m ) ) * 1 / m 
-    Q      = np.diag( np.ones( (n_p) ) )
+    Q      = np.diag( np.ones( (n_p) ) ) * 0.0
     
     b      = 1.0
     l      = 1.0
@@ -675,7 +675,7 @@ def J2( p , pts , p_nom , param  ):
     
     method = 'sample'
     
-    n      = 200           # number of model pts
+    n      = 100           # number of model pts
     x_min  = -200
     x_max  = +200
     
@@ -729,7 +729,7 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
     if num:
         
         dJ_dp = np.zeros( n_p )
-        dp    =  0.001 * np.ones( n_p )
+        dp    =  0.0001 * np.ones( n_p )
         
         for i in range( n_p ):
         
@@ -754,7 +754,7 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         n_p    = p.shape[0]    # number of model parameters
         
         R      = np.ones( ( m ) ) * 1 / m 
-        Q      = np.diag( np.ones( (n_p) ) )
+        Q      = np.diag( np.ones( (n_p) ) ) * 0.0
         
         b      = 1.0
         l      = 1.0
@@ -765,7 +765,6 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         n      = 100           # number of model pts
         x_min  = -200
         x_max  = +200
-        
         
         
         x0  = p[0]
@@ -808,10 +807,6 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             yk = deltas[1,k]
             zk = deltas[2,k]
             
-            xk = deltas[0,k]
-            yk = deltas[1,k]
-            zk = deltas[2,k]
-            
             # pre-computation
             s  = np.sin( phi )
             c  = np.cos( phi )
@@ -840,9 +835,9 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
                 dyk_dp = deltas_grad[1,k,i_p-5]
                 dzk_dp = deltas_grad[2,k,i_p-5]
                 
-                eT_de_dp[i_p,:] = ( ( -c * dxk_dp + s * dyk_dp ) + 
-                                    ( -s * dxk_dp - c * dyk_dp ) +
-                                    ( - dzk_dp                 ) )
+                eT_de_dp[i_p,:] = ( ex * ( -c * dxk_dp + s * dyk_dp ) + 
+                                    ey * ( -s * dxk_dp - c * dyk_dp ) +
+                                    ez * ( - dzk_dp                 ) )
                 
                 
             # Norm grad

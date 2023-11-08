@@ -34,6 +34,7 @@ pts5 = catenary.generate_test_data( p_5 , n_obs = 10, w_l = 0.01 , n_out = 1, ce
 
 pts = np.hstack( ( pts1 , pts2 , pts3 , pts4 , pts5 ))
 
+
 p_true =  np.array([  28.0, 50.0, 77.0, 0.0, 53, 20.0, 15.0, 20.0 ])
 
 p_hat  =  np.array([  27.0, 49.0, 76.0, 0.1, 50, 19., 14., 19.0 ])
@@ -43,10 +44,16 @@ bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , 
 
  
 
-# plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
+## Simple
+pts = np.zeros((3,1))
+p_hat  =  np.array([  -10.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
+# p_hat  =  np.array([  -9.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
+pts    = np.zeros((3,1))
+
+plot = powerline.EstimationPlot( p_hat , p_hat, pts , model.p2r_w , 25, -50, 50)
 
 p     = p_hat
-p_nom = np.array([  0.,0,0,0,0,0,0,0 ])
+p_nom = np.array([ 0.,0,0,0,0,0,0,0 ])
 
 m   = pts.shape[1]
 ind = np.arange(0,m)
@@ -59,7 +66,7 @@ x_min    = -200
 x_max    = +200
 
 R      = np.ones( ( m ) ) * 1 / m 
-Q      = np.diag( np.ones( (n_p) ) )
+Q      = np.diag( np.ones( (n_p) ) ) * 0.0
 
 b      = 1.0
 l      = 1.0
@@ -99,83 +106,102 @@ e  = E[ : , ind , j , k ]        # Closest error vector
 # d2 = powerline.find_closest_distance( p_init , pts , model.p2r_w )
 # (d3,j3,k3) = powerline.find_closest_distance_cable_point( p_init , pts , model.p2r_w )
 
-# params = [ 'sample' , np.diag([ 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0]) ,
-#             1.0 , 1.0 , 2 , 200 , -200 , 200, model.p2r_w ]
-
-# J1 = powerline.J(p_init, pts, p, params)
-
-# J2 = powerline.J2(p_init, pts, p, model.p2r_w )
-
-# print( J1 , J2 )
-
-
-# Array offsets
-deltas      = model.p2deltas( p )
-deltas_grad = model.deltas_grad()
-
-xk = deltas[0,k]
-yk = deltas[1,k]
-zk = deltas[2,k]
-
-x0  = p[0]
-y0  = p[1]
-z0  = p[2]
-phi = p[3]
-a   = p[4]
-
-# pre-computation
-s  = np.sin( phi )
-c  = np.cos( phi )
-sh = np.sinh( xj / a )
-ch = np.cosh( xj / a )
-ex = e[0,:]
-ey = e[1,:]
-ez = e[2,:]
-
-# Error Grad for each pts
-eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
-
-eT_de_dp[0,:] = -ex
-eT_de_dp[1,:] = -ey
-eT_de_dp[2,:] = -ez
-eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
-                   ey * (-( xj + xk ) * c + yk * s ) ) 
-eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
-
-
-
-# for all offset parameters
-for i_p in range(5, n_p):
-    
-    dxk_dp = deltas_grad[0,k,i_p-5]
-    dyk_dp = deltas_grad[1,k,i_p-5]
-    dzk_dp = deltas_grad[2,k,i_p-5]
-    
-    
-    eT_de_dp[i_p,:] = ( ( -c * dxk_dp + s * dyk_dp ) + 
-                        ( -s * dxk_dp - c * dyk_dp ) +
-                        ( - dzk_dp                 ) )
-    
-
-# Norm grad
-dd_dp = eT_de_dp / d
-
-# Smoothing grad
-dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
-
-dc_dp = dc_dd * dd_dp
+c = catenary.lorentzian( d , l , power , b )
 
 # Regulation
 p_e = p_nom - p
 
 # Total cost with regulation
-dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
+R      = np.ones( ( m ) ) * 1 / m 
+Q      = np.diag( np.ones( (n_p) ) ) * 0.0
+J3 = R.T @ c + p_e.T @ Q @ p_e
 
-print( dJ_dp )
+
+
+params = [ 'sample' , Q ,
+            1.0 , 1.0 , 2 , 100 , -200 , 200, model.p2r_w ]
+
+J1 = powerline.J(p, pts, p_nom, params)
+
+J2 = powerline.J2(p, pts, p_nom, model.p2r_w )
+
+print( J1 , J2 , J3)
+# print( J3 )
+print( e )
+print( d )
+print( c )
+
+# # Array offsets
+# deltas      = model.p2deltas( p )
+# deltas_grad = model.deltas_grad()
+
+# xk = deltas[0,k]
+# yk = deltas[1,k]
+# zk = deltas[2,k]
+
+# x0  = p[0]
+# y0  = p[1]
+# z0  = p[2]
+# phi = p[3]
+# a   = p[4]
+
+# # pre-computation
+# s  = np.sin( phi )
+# c  = np.cos( phi )
+# sh = np.sinh( xj / a )
+# ch = np.cosh( xj / a )
+# ex = e[0,:]
+# ey = e[1,:]
+# ez = e[2,:]
+
+# # Error Grad for each pts
+# eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
+
+# eT_de_dp[0,:] = -ex
+# eT_de_dp[1,:] = -ey
+# eT_de_dp[2,:] = -ez
+# eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
+#                     ey * (-( xj + xk ) * c + yk * s ) ) 
+# eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
+
+
+
+# # for all offset parameters
+# for i_p in range(5, n_p):
+    
+#     dxk_dp = deltas_grad[0,k,i_p-5]
+#     dyk_dp = deltas_grad[1,k,i_p-5]
+#     dzk_dp = deltas_grad[2,k,i_p-5]
+    
+    
+#     eT_de_dp[i_p,:] = ( ex * ( -c * dxk_dp + s * dyk_dp ) + 
+#                         ey * ( -s * dxk_dp - c * dyk_dp ) +
+#                         ez * ( - dzk_dp                 ) )
+    
+
+# # Norm grad
+# dd_dp = eT_de_dp / d
+
+# # Smoothing grad
+# dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
+
+# dc_dp = dc_dd * dd_dp
+
+# # Regulation
+# p_e = p_nom - p
+
+# # Total cost with regulation
+# dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
+
+# print( dJ_dp )
 
 dJ2 = powerline.dJ2_dp( p, pts, p_nom, model , num = False )
-# print( dJ2 )
+
 
 dJ1 = powerline.dJ2_dp( p, pts, p_nom, model , num = True )
-print( dJ1 )
+print( dJ2[0:4] )
+print( dJ1[0:4] )
+
+print( dJ2[4:] )
+print( dJ1[4:] )
 

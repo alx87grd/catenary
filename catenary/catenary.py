@@ -557,7 +557,7 @@ def plot_lorentzian( l = 10 , power = 2 , b = 1.0 , ax = None ):
     x = np.linspace( -100.0 , 100.0 , 10000 ) 
     y = lorentzian( x , l , power )
 
-    ax[0].plot( x , y , label= r'$l =$ %0.1f' % l )
+    ax[0].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b) )
     ax[0].set_xlabel( 'x', fontsize = 5)
     ax[0].grid(True)
     ax[0].legend()
@@ -567,7 +567,7 @@ def plot_lorentzian( l = 10 , power = 2 , b = 1.0 , ax = None ):
     x = np.linspace( -1.0 , 1.0 , 1000 ) 
     y = lorentzian( x , l , power )
     
-    ax[1].plot( x , y , label= r'$l =$ %0.1f' % l )
+    ax[1].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b))
     ax[1].set_xlabel( 'x', fontsize = 5)
     ax[1].grid(True)
     ax[1].legend()
@@ -700,8 +700,9 @@ def generate_test_data_sequence ( t, p0 , dp_dt , partial_obs = True,
 if __name__ == "__main__":     
     """ MAIN TEST """
     
+    ax = plot_lorentzian( l = 1.0, power = 2, b = 1.0 )
     
-    plot_lorentzian( 1.0 )
+    plot_lorentzian( l = 1.0 , power = 4, b = 0.5 , ax = ax )
 
     
 

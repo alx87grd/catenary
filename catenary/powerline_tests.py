@@ -658,7 +658,7 @@ if __name__ == "__main__":
     
     # basic_array2221_tracking_test()
     
-    # hard_array2221_tracking_test()
+    hard_array2221_tracking_test()
     
     # hard_arrayconstant2221_tracking_test()
     
