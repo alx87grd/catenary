@@ -48,9 +48,9 @@ bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , 
 pts = np.zeros((3,1))
 p_hat  =  np.array([  -10.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
 # p_hat  =  np.array([  -9.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
-pts    = np.zeros((3,1))
+# pts    = np.zeros((3,1))
 
-plot = powerline.EstimationPlot( p_hat , p_hat, pts , model.p2r_w , 25, -50, 50)
+# plot = powerline.EstimationPlot( p_hat , p_hat, pts , model.p2r_w , 25, -50, 50)
 
 p     = p_hat
 p_nom = np.array([ 0.,0,0,0,0,0,0,0 ])
@@ -117,91 +117,109 @@ Q      = np.diag( np.ones( (n_p) ) ) * 0.0
 J3 = R.T @ c + p_e.T @ Q @ p_e
 
 
+# method = param[0]
+# Q      = param[1]
+# b      = param[2]
+# l      = param[3]
+# power  = param[4]
+# n      = param[5]
+# x_min  = param[6]
+# x_max  = param[7]
+# p2r_w  = param[8]
 
-params = [ 'sample' , Q ,
-            1.0 , 1.0 , 2 , 100 , -200 , 200, model.p2r_w ]
+params_J1 = [ 'sample' , Q , b , l , power , n , x_min , x_max, model.p2r_w ]
 
-J1 = powerline.J(p, pts, p_nom, params)
+params_J2 = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
 
-J2 = powerline.J2(p, pts, p_nom, model.p2r_w )
+J1 = powerline.J(p, pts, p_nom, params_J1 )
+
+J2 = powerline.J2(p, pts, p_nom, params_J2 )
 
 print( J1 , J2 , J3)
-# print( J3 )
-print( e )
-print( d )
-print( c )
-
-# # Array offsets
-# deltas      = model.p2deltas( p )
-# deltas_grad = model.deltas_grad()
-
-# xk = deltas[0,k]
-# yk = deltas[1,k]
-# zk = deltas[2,k]
-
-# x0  = p[0]
-# y0  = p[1]
-# z0  = p[2]
-# phi = p[3]
-# a   = p[4]
-
-# # pre-computation
-# s  = np.sin( phi )
-# c  = np.cos( phi )
-# sh = np.sinh( xj / a )
-# ch = np.cosh( xj / a )
-# ex = e[0,:]
-# ey = e[1,:]
-# ez = e[2,:]
-
-# # Error Grad for each pts
-# eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
-
-# eT_de_dp[0,:] = -ex
-# eT_de_dp[1,:] = -ey
-# eT_de_dp[2,:] = -ez
-# eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
-#                     ey * (-( xj + xk ) * c + yk * s ) ) 
-# eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
+# # print( J3 )
+# print('j: ', j )
+# print('k: ', k )
+# print('e: ', e.T )
+# print('d: ', d )
+# print('c: ', c )
 
 
+# Array offsets
+deltas      = model.p2deltas( p )
+deltas_grad = model.deltas_grad()
 
-# # for all offset parameters
-# for i_p in range(5, n_p):
+xk = deltas[0,k]
+yk = deltas[1,k]
+zk = deltas[2,k]
+
+x0  = p[0]
+y0  = p[1]
+z0  = p[2]
+phi = p[3]
+a   = p[4]
+
+# pre-computation
+s  = np.sin( phi )
+c  = np.cos( phi )
+sh = np.sinh( xj / a )
+ch = np.cosh( xj / a )
+ex = e[0,:]
+ey = e[1,:]
+ez = e[2,:]
+
+# Error Grad for each pts
+eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
+
+eT_de_dp[0,:] = -ex
+eT_de_dp[1,:] = -ey
+eT_de_dp[2,:] = -ez
+eT_de_dp[3,:] =  ( ex * ( ( xj + xk ) * s + yk * c ) +
+                    ey * (-( xj + xk ) * c + yk * s ) ) 
+eT_de_dp[4,:] = ez * ( 1 + ( xj / a ) * sh - ch  )
+
+
+
+# for all offset parameters
+for i_p in range(5, n_p):
     
-#     dxk_dp = deltas_grad[0,k,i_p-5]
-#     dyk_dp = deltas_grad[1,k,i_p-5]
-#     dzk_dp = deltas_grad[2,k,i_p-5]
+    dxk_dp = deltas_grad[0,k,i_p-5]
+    dyk_dp = deltas_grad[1,k,i_p-5]
+    dzk_dp = deltas_grad[2,k,i_p-5]
     
     
-#     eT_de_dp[i_p,:] = ( ex * ( -c * dxk_dp + s * dyk_dp ) + 
-#                         ey * ( -s * dxk_dp - c * dyk_dp ) +
-#                         ez * ( - dzk_dp                 ) )
+    eT_de_dp[i_p,:] = ( ex * ( -c * dxk_dp + s * dyk_dp ) + 
+                        ey * ( -s * dxk_dp - c * dyk_dp ) +
+                        ez * ( - dzk_dp                 ) )
     
 
-# # Norm grad
-# dd_dp = eT_de_dp / d
 
-# # Smoothing grad
-# dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
+# print('eT_de_dp: ',eT_de_dp.T )
 
-# dc_dp = dc_dd * dd_dp
+# Norm grad
+dd_dp = eT_de_dp / d
 
-# # Regulation
-# p_e = p_nom - p
+# Smoothing grad
+dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
 
-# # Total cost with regulation
-# dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
+dc_dp = dc_dd * dd_dp
+
+# Regulation
+p_e = p_nom - p
+
+# Total cost with regulation
+dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
 
 # print( dJ_dp )
 
-dJ2 = powerline.dJ2_dp( p, pts, p_nom, model , num = False )
+# dJ2 = dJ_dp
+dJ2 = powerline.dJ2_dp( p, pts, p_nom, params_J2 , num = False )
 
 
-dJ1 = powerline.dJ2_dp( p, pts, p_nom, model , num = True )
+dJ1 = powerline.dJ2_dp( p, pts, p_nom, params_J2 , num = True )
 print( dJ2[0:4] )
 print( dJ1[0:4] )
 
 print( dJ2[4:] )
 print( dJ1[4:] )
+# print( dJ2 / dJ1 )
 

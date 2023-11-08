@@ -658,33 +658,30 @@ def J( p , pts , p_nom , param ):
 def J2( p , pts , p_nom , param  ):
     """ 
     
+    params = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
     """
     
-    m      = pts.shape[1]  # number of measurements
-    
-    n_p    = p.shape[0]    # number of model parameters
-    
-    p2r_w  = param
-    
-    R      = np.ones( ( m ) ) * 1 / m 
-    Q      = np.diag( np.ones( (n_p) ) ) * 0.0
-    
-    b      = 1.0
-    l      = 1.0
-    power  = 2.0
-    
-    method = 'sample'
-    
-    n      = 100           # number of model pts
-    x_min  = -200
-    x_max  = +200
+    m      = pts.shape[1]    # number of measurements
+    n_p    = p.shape[0]      # number of model parameters
+    model  = param[0]        # array model
+    R      = param[1]        # vector of pts weight
+    Q      = param[2]        # regulation matrix
+    l      = param[3]        # cost function shaping param
+    power  = param[4]        # cost function shaping param
+    b      = param[5]        # cost function shaping param
+    method = param[6]        # data association method
+    n      = param[7]        # number of model pts (for sample method)
+    x_min  = param[8]        # start of sample points (for sample method)
+    x_max  = param[9]        # end of sample points (for sample method)
     
     ###################################################
     if method == 'sample':
         """ data association is sampled-based """
         
+        p2r_w = model.p2r_w
+        
         # Minimum distances to model for all measurements
-        d_min = find_closest_distance( p , pts , p2r_w , x_min ,  x_max , n )
+        d_min = find_closest_distance( p, pts , p2r_w , x_min ,  x_max , n )
     
     ###################################################
     elif method == 'x':
@@ -694,10 +691,17 @@ def J2( p , pts , p_nom , param  ):
         
     ###################################################
         
-    # Cost shaping function
-    c = catenary.lorentzian( d_min , l , power , b )
     
-    # Regulation
+    # From distance to individual pts cost
+    if not ( l == 0 ):
+        # Cost shaping function
+        c = catenary.lorentzian( d_min , l , power , b )
+        
+    else:
+        # No cost shaping
+        c = d_min 
+    
+    # Regulation error
     p_e = p_nom - p
     
     # Total cost with regulation
@@ -722,9 +726,9 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
     
     """
     
-    model = param
+    m      = pts.shape[1]    # number of measurements
+    n_p    = p.shape[0]      # number of model parameters
     
-    n_p    = p.shape[0]    # number of model parameters
 
     if num:
         
@@ -737,8 +741,8 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             pm    = p.copy()
             pp[i] = p[i] + dp[i]
             pm[i] = p[i] - dp[i]
-            cp    = J2( pp , pts , p_nom , model.p2r_w )
-            cm    = J2( pm , pts , p_nom , model.p2r_w )
+            cp    = J2( pp , pts , p_nom , param )
+            cm    = J2( pm , pts , p_nom , param )
             
             dJ_dp[i] = ( cp - cm ) / ( 2.0 * dp[i] )
     
@@ -748,28 +752,17 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         # Analytical gratient
         #########################
         
-        m      = pts.shape[1]  # number of measurements
+        model  = param[0]        # array model
+        R      = param[1]        # vector of pts weight
+        Q      = param[2]        # regulation matrix
+        l      = param[3]        # cost function shaping param
+        power  = param[4]        # cost function shaping param
+        b      = param[5]        # cost function shaping param
+        method = param[6]        # data association method
+        n      = param[7]        # number of model pts (for sample method)
+        x_min  = param[8]        # start of sample points (for sample method)
+        x_max  = param[9]        # end of sample points (for sample method)
         
-        
-        n_p    = p.shape[0]    # number of model parameters
-        
-        R      = np.ones( ( m ) ) * 1 / m 
-        Q      = np.diag( np.ones( (n_p) ) ) * 0.0
-        
-        b      = 1.0
-        l      = 1.0
-        power  = 2.0
-        
-        method = 'sample'
-        
-        n      = 100           # number of model pts
-        x_min  = -200
-        x_max  = +200
-        
-        
-        x0  = p[0]
-        y0  = p[1]
-        z0  = p[2]
         phi = p[3]
         a   = p[4]
         
@@ -780,7 +773,7 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             ind = np.arange(0,m)
                
             # generate a list of sample point on the model curve
-            r_flat, r , xs = model.p2r_w( p, x_min , x_max , n )
+            r_flat, r , xs = model.p2r_w( p , x_min , x_max , n )
                
             # Vectors between measurements and all model pts of all cables
             E = pts[:,:,np.newaxis,np.newaxis] - r[:,np.newaxis,:,:]
@@ -850,9 +843,16 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         
         ################################
         
-        # Smoothing grad
-        dc_dd = b * power * ( b * d ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d ) ** power )
+        # From distance to individual pts cost
+        if not ( l == 0 ):
+            # Cost shaping function
+            dc_dd = b ** power * power * d ** ( power - 1 ) / ( np.log( 10 ) * ( l + ( b * d ) ** power ) )
+            
+        else:
+            # No cost shaping
+            dc_dd = 1.0
         
+        # Smoothing grad
         dc_dp = dc_dd * dd_dp
     
         # Regulation

@@ -126,17 +126,21 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 200, ):
 # ###########################
         
 ############################
-def lorentzian( x , l = 1.0 , power = 2 , b = 1.0 ):
+def lorentzian( d , l = 1.0 , power = 2 , b = 1.0 ):
     """ 
     
     Cost shaping function that smooth out the cost of large distance to 
     minimize the effect of outliers.
     
-    c = np.log10( 1 + ( b * x ) ** power / l )
+    c = np.log10( 1 + ( b * d ) ** power / l )
     
     inputs
     --------
-    x  : input vector of distance
+    d  : input vector of distance
+    
+    l     : shaping parameter or if set to zero c = d
+    power : shaping parameter
+    b     : shaping parameter
     
     outputs
     ----------
@@ -144,7 +148,7 @@ def lorentzian( x , l = 1.0 , power = 2 , b = 1.0 ):
         
     """
     
-    c = np.log10( 1 + ( b * x ) ** power / l )
+    c = np.log10( 1 +  ( b * d ) ** power  / l )
     
     return c
 
