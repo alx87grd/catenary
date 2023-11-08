@@ -879,13 +879,12 @@ class ArrayEstimator:
     """
     
     #################################################
-    def __init__(self, p2r_w , p_0 ):
+    def __init__(self, model , p_0 ):
         
-        
-        self.n_p    = p_0.shape[0]                 # number of parameters
-        
-        self.p2r_w  = p2r_w                        # forward kinematic
-        self.n_line = p2r_w( p_0 )[1].shape[2]     # number of lines in the array
+        self.model  = model
+        # self.p2r_w  = model.p2r_w        # forward kinematic
+        self.n_p    = model.l            # number of parameters
+        self.n_line = model.q            # number of lines in the array
         
         
         # default parameter range
@@ -969,17 +968,31 @@ class ArrayEstimator:
     
     
     #####################################################
-    def get_cost_parameters(self):
+    def get_cost_parameters(self, m ):
         
-        param = [self.method,
+        # For J1
+        # param = [self.method,
+        #          self.Q,
+        #          self.b,
+        #          self.l,
+        #          self.power,
+        #          self.n_sample,
+        #          self.x_min,
+        #          self.x_max,
+        #          self.p2r_w   ]
+        
+        R      = np.ones( ( m ) ) * 1 / m 
+        
+        param = [self.model,
+                 R,
                  self.Q,
-                 self.b,
                  self.l,
                  self.power,
+                 self.b,
+                 self.method,
                  self.n_sample,
                  self.x_min,
-                 self.x_max,
-                 self.p2r_w   ]
+                 self.x_max]
             
         return param
             
@@ -989,13 +1002,15 @@ class ArrayEstimator:
     def solve( self, pts , p_init , callback = None ):
         
         bounds = self.get_bounds()
-        param  = self.get_cost_parameters()
-        func   = lambda p: J(p, pts, p_init, param)
+        param  = self.get_cost_parameters( m = pts.shape[1] )
+        func   = lambda p: J2(p, pts, p_init, param)
+        grad   = lambda p: dJ2_dp( p, pts, p_init, param , num = False )
         
         res = minimize( func,
                         p_init, 
                         method='SLSQP',  
                         bounds=bounds, 
+                        jac = grad,
                         #constraints=constraints,  
                         callback=callback, 
                         options={'disp':True,'maxiter':500})
@@ -1010,8 +1025,9 @@ class ArrayEstimator:
     def solve_with_translation_search( self, pts , p_init , n = 10 , var = 10 , callback = None ):
         
         bounds = self.get_bounds()
-        param  = self.get_cost_parameters()
-        func   = lambda p: J(p, pts, p_init, param)
+        param  = self.get_cost_parameters( m = pts.shape[1] )
+        func   = lambda p: J2(p, pts, p_init, param)
+        grad   = lambda p: dJ2_dp( p, pts, p_init, param , num = False )
         
         # variation to params
         rng    = np.random.default_rng( seed = None )
@@ -1033,6 +1049,7 @@ class ArrayEstimator:
                             p, 
                             method='SLSQP',  
                             bounds=bounds, 
+                            jac = grad,
                             #constraints=constraints,  
                             callback=callback, 
                             options={'disp':False,'maxiter':500})
@@ -1050,7 +1067,7 @@ class ArrayEstimator:
     def is_target_aquired( self, p , pts , ):
         
         # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
+        r_model  = self.model.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )

@@ -132,7 +132,7 @@ def lorentzian( d , l = 1.0 , power = 2 , b = 1.0 ):
     Cost shaping function that smooth out the cost of large distance to 
     minimize the effect of outliers.
     
-    c = np.log10( 1 + ( b * d ) ** power / l )
+    c = np.log10( 1 + ( b * x ) ** power / l )
     
     inputs
     --------
@@ -440,7 +440,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
         ################################
         
         # Smoothing grad
-        dc_dd = b * power * ( b * d_min ) ** ( power - 1 ) / ( np.log( 10 ) * ( l +  b * d_min ) ** power )
+        dc_dd = b * power * ( b * d_min ) ** ( power - 1 ) / ( np.log( 10 ) *  (  l +  ( b * d_min ) ** power ) )
         
         dc_dp = dc_dd * dd_dp
         

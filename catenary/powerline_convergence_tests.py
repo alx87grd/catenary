@@ -455,42 +455,6 @@ def arrayconstant2221_cost_shape_analysis():
         
 
 
-############################
-def basic_array32_estimator_test():
-    
-    
-    model  = powerline.ArrayModel32()
-
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
-    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 49.  , 29.  , 49    ])
-    
-    pts = model.generate_test_data( p , partial_obs = True )
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
-    
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    
-    for i in range(500):
-        
-        pts = model.generate_test_data( p , partial_obs = True )
-        
-        plot.update_pts( pts )
-    
-        p_hat  = estimator.solve( pts , p_hat ) 
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
-
 
 
 
@@ -535,104 +499,106 @@ def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
     ax[0].tick_params( labelsize = 5 )
     
     
+    
+    
 
-############################
-def translation_search_test( search = True , n = 3 , var = 10 ):
+###########################
+# Speed tests
+###########################
+        
+
+
+def speed_test( plot = False ):
+    
     
     model  = powerline.ArrayModel32()
+
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
+    p_hat  =  np.array([ 100, 100, 100, 1.2, 300, 40.  , 25.  , 25    ])
     
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
-    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 25.  , 49  ])
+    bounds = [ (0,200), (0,200) , (0,200) , (0.5,1.5) , (100,2000) , (30,60), (15,50) , (15,50)]
     
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 5 ,
-                                         center = [0,0,0] , w_o = 20 )
+    pts    = model.generate_test_data( p , n_obs = 10 , x_min = -50, x_max = 50, 
+                            w_l = 0.5, n_out = 3, center = [0,0,0] , 
+                            w_o = 100, partial_obs = False )
+    m      = pts.shape[1]
     
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    # plot   = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
     
-    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
+    R      = np.ones( ( m ) ) * 1 / m 
+    Q      = 0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    b      = 1.0
+    l      = 1.0
+    power  = 2.0
+    method = 'sample'
+    n      =  101
+    x_min  = -50
+    x_max  = +50
     
-    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
+    
+    ###########################
+    # 1
+    ###########################
+    
+    func = lambda p: powerline.J2(p, pts, p_hat, params)
+    
+
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_hat, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    # jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t1 = time.time() - start_time
+    p1 = res.x
+    
+    ###########################
+    # 2
+    ###########################
     
     
-    for i in range(25):
+    jac = lambda p: powerline.dJ2_dp( p, pts, p_hat, params)
+
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_hat, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t2 = time.time() - start_time
+    p2 = res.x
+    
+    
+    print( f" Init: {np.array2string(p_hat, precision=2, floatmode='fixed')} \n" +
+           f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n"     +
+           f" p1: {np.array2string(p1, precision=2, floatmode='fixed')} \n"     +
+           f" p2: {np.array2string(p2, precision=2, floatmode='fixed')} \n" )
+    
+    print('Sample no grad   t=',t1)
+    print('Sample with grad t=',t2)
+    
+    if plot:
+    
+        plot   = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
         
-        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 5 ,
-                                             center = [-50,-50,-50] , w_o = 10 )
+        plot   = powerline.EstimationPlot( p , p1 , pts , model.p2r_w )
         
-        plot.update_pts( pts )
+        plot   = powerline.EstimationPlot( p , p2 , pts , model.p2r_w )
     
-        if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
-            
-        else:
-            p_hat  = estimator.solve( pts , p_hat )
-            
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
+    
 
 
-############################
-def hard_test( search = True , n = 2, var = 10 ):
-    
-    model  = powerline.ArrayModel32()
-    
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
-    p_hat  =  np.array([   0,   0, 150, 1.2, 500, 51.  , 26.  , 49  ])
-    
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                    w_l = 0.2 , x_min = -100, x_max = -50, 
-                                    n_out = 5 , center = [0,0,0] , w_o = 20 )
-    
-    pts = pts[:,:30] #remover one cable
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    estimator = powerline.ArrayEstimator( model.p2r_w , p_hat )
-    
-    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    
-    
-    for i in range(250):
-        
-        pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                             x_min = -100, x_max = -70, n_out = 5 ,
-                                             center = [-50,-50,-50] , w_o = 10 )
-        
-        pts = pts[:,:30] #remover one cable
-        
-        plot.update_pts( pts )
-    
-        if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
-            
-        else:
-            p_hat  = estimator.solve( pts , p_hat )
-            
-        target = estimator.is_target_aquired( p_hat , pts)
-        
-        plot.update_estimation( p_hat )
-        
-        
-        print( " Target acquired: " + str(target) + '\n' +
-                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
-                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
-        
-        
-    return estimator
-    
     
 
 '''
@@ -664,12 +630,8 @@ if __name__ == "__main__":
     
     # arrayconstant2221_cost_shape_analysis()
     
-    # basic_array32_estimator_test()
-    
     # array32_cost_shape_analysis()
     
-    # translation_search_test( False )
-    # translation_search_test( True )
+    speed_test()
     
-    hard_test()
 
