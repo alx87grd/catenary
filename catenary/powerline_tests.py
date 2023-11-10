@@ -35,7 +35,7 @@ def J1_vs_J2():
     x_max    = +200
 
     R      = np.ones( ( m ) ) * 1 / m 
-    Q      = np.diag( np.ones( (n_p) ) ) * 1.0
+    Q      = np.diag( np.ones( (n_p) ) ) * 0.0000
 
     b      = 1.0
     l      = 1.0
@@ -48,6 +48,43 @@ def J1_vs_J2():
     J1 = powerline.J(p, pts, p_nom, params_J1 )
 
     J2 = powerline.J2(p, pts, p_nom, params_J2 )
+
+    print( J1 , J2 )
+    
+    return ( np.abs(J1-J2) < 0.00001 )
+
+
+def J_x_vs_sample():
+    
+    p      =  np.array([  -10.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
+    p_nom  =  np.array([  -11.0, -11.0, -10.1, 0.5, 200, 16.0, 1.0, 1.0 ])
+    
+    model  = powerline.ArrayModel32()
+
+    pts    = model.generate_test_data( p , partial_obs = True )
+
+    
+    m   = pts.shape[1]
+
+    n_p = model.l
+        
+    n        = 100
+    x_min    = -200
+    x_max    = +200
+
+    R      = np.ones( ( m ) ) * 1 / m 
+    Q      = np.diag( np.ones( (n_p) ) ) * 0.0000
+
+    b      = 1.0
+    l      = 1.0
+    power  = 2.0
+
+    params1 = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
+    params2 = [ model , R , Q , l , power , b , 'x'      , None , None , None ]
+
+    J1 = powerline.J2(p, pts, p_nom, params1 )
+
+    J2 = powerline.J2(p, pts, p_nom, params2 )
 
     print( J1 , J2 )
     
@@ -121,6 +158,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     print('J2 test : ', J1_vs_J2())
+    print('J x test : ', J_x_vs_sample())
     print('gradient test : ', gradient_test())
 
 

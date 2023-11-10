@@ -514,9 +514,9 @@ def speed_test( plot = False ):
     model  = powerline.ArrayModel32()
 
     p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
-    p_hat  =  np.array([ 100, 100, 100, 1.2, 300, 40.  , 25.  , 25    ])
+    p_hat  =  np.array([  55,  66,  32, 1.2, 400, 49.  , 29.  , 58.    ])
     
-    bounds = [ (0,200), (0,200) , (0,200) , (0.5,1.5) , (100,2000) , (30,60), (15,50) , (15,50)]
+    bounds = [ (0,200), (0,200) , (0,200) , (0.5,1.5) , (100,800) , (30,60), (15,50) , (15,50)]
     
     pts    = model.generate_test_data( p , n_obs = 10 , x_min = -50, x_max = 50, 
                             w_l = 0.5, n_out = 3, center = [0,0,0] , 
@@ -579,14 +579,39 @@ def speed_test( plot = False ):
     t2 = time.time() - start_time
     p2 = res.x
     
+    ###########################
+    # 3
+    ###########################
+    
+    params[6] = 'x'
+    
+    func = lambda p: powerline.J2(p, pts, p_hat, params)
+    
+
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_hat, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    # jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t3 = time.time() - start_time
+    p3 = res.x
+    
     
     print( f" Init: {np.array2string(p_hat, precision=2, floatmode='fixed')} \n" +
            f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n"     +
            f" p1: {np.array2string(p1, precision=2, floatmode='fixed')} \n"     +
-           f" p2: {np.array2string(p2, precision=2, floatmode='fixed')} \n" )
+           f" p2: {np.array2string(p2, precision=2, floatmode='fixed')} \n"   +
+           f" p3: {np.array2string(p3, precision=2, floatmode='fixed')} \n" )
     
     print('Sample no grad   t=',t1)
     print('Sample with grad t=',t2)
+    print('x no grad t=',t3)
     
     if plot:
     
@@ -632,6 +657,6 @@ if __name__ == "__main__":
     
     # array32_cost_shape_analysis()
     
-    speed_test()
+    speed_test( False )
     
 

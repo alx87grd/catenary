@@ -118,7 +118,7 @@ def hard_test( search = True , n = 2, var = 10 ):
     
     pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
                                     w_l = 0.2 , x_min = -100, x_max = -50, 
-                                    n_out = 5 , center = [0,0,0] , w_o = 20 )
+                                    n_out = 3 , center = [0,0,0] , w_o = 20 )
     
     pts = pts[:,:30] #remover one cable
     
@@ -128,6 +128,9 @@ def hard_test( search = True , n = 2, var = 10 ):
     
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    estimator.d_th         = 3.0
+    estimator.succes_ratio = 0.7
     
     
     for i in range(250):
@@ -139,19 +142,95 @@ def hard_test( search = True , n = 2, var = 10 ):
         pts = pts[:,:30] #remover one cable
         
         plot.update_pts( pts )
-    
+        
+        start_time = time.time()
         if search:
             p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
             
         else:
             p_hat  = estimator.solve( pts , p_hat )
             
+        solve_time = time.time() - start_time 
+            
         target = estimator.is_target_aquired( p_hat , pts)
         
         plot.update_estimation( p_hat )
         
         
-        print( " Target acquired: " + str(target) + '\n' +
+        print(  " Solve time : " + str(solve_time) + '\n' + 
+                " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+############################
+def very_hard_test( search = True , n = 2, var = 100 ):
+    
+    model  = powerline.ArrayModel32()
+    
+    p      =  np.array([  50,  50,  50, 0.0, 200, 50.  , 25.  , 150. ])
+    p_hat  =  np.array([   0,   0, 150, 0.2, 300, 51.  , 26.  , 149  ])
+    
+    ps = model.p2ps( p )
+    
+    ps[4,3] = 2000
+    ps[4,4] = 2000
+    
+    pts0 = catenary.generate_test_data( ps[:,0], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+    pts1 = catenary.generate_test_data( ps[:,1], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+    pts2 = catenary.generate_test_data( ps[:,2], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+    pts3 = catenary.generate_test_data( ps[:,3], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+    pts4 = catenary.generate_test_data( ps[:,4], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+    
+    # pts = np.hstack( ( pts0 , pts1 , pts2 , pts3 , pts4 ))
+    
+    pts = np.hstack( ( pts1 , pts3 , pts4 ))
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model , p_hat )
+    
+    # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    estimator.d_th         = 5.0
+    estimator.succes_ratio = 0.5
+    
+    
+    for i in range(250):
+        
+        pts0 = catenary.generate_test_data( ps[:,0], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts1 = catenary.generate_test_data( ps[:,1], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts2 = catenary.generate_test_data( ps[:,2], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts3 = catenary.generate_test_data( ps[:,3], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts4 = catenary.generate_test_data( ps[:,4], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        
+        # pts = np.hstack( ( pts0 , pts1 , pts2 , pts3 , pts4 ))
+        
+        pts = np.hstack( ( pts1 , pts3 , pts4 ))
+        
+        plot.update_pts( pts )
+        
+        start_time = time.time()
+        
+        if search:
+            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
+            
+        else:
+            p_hat  = estimator.solve( pts , p_hat )
+            
+        solve_time = time.time() - start_time 
+            
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print(  " Solve time : " + str(solve_time) + '\n' + 
+                " Target acquired: " + str(target) + '\n' +
                 f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
@@ -171,10 +250,12 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_array32_estimator_test()
+    # basic_array32_estimator_test()
     
     # translation_search_test( False )
     # translation_search_test( True )
     
-    # hard_test()
+    hard_test( search = True )
+    
+    # very_hard_test()
 

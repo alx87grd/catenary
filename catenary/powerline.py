@@ -681,13 +681,48 @@ def J2( p , pts , p_nom , param  ):
         p2r_w = model.p2r_w
         
         # Minimum distances to model for all measurements
-        d_min = find_closest_distance( p, pts , p2r_w , x_min ,  x_max , n )
+        d_min = find_closest_distance( p , pts , p2r_w , x_min ,  x_max , n )
     
     ###################################################
     elif method == 'x':
         """ data association is based on local x-coord in cat frame """
         
-        raise NotImplementedError
+        x0  = p[0]
+        y0  = p[1]
+        z0  = p[2]
+        psi = p[3]
+        a   = p[4]
+        
+        # Array offsets
+        r_k = model.p2deltas( p )
+        
+        # Transformation Matrix
+        c_T_w = np.linalg.inv( catenary.w_T_c( psi , x0 , y0 , z0 ) )
+        
+        # Compute measurements points positions in local cable frame
+        r_w = np.vstack( [ pts , np.ones(m) ] )
+        r_i = ( c_T_w @ r_w )[0:3,:]
+        
+        # Catenary elevation at ref point
+        x_j = r_i[0,:,np.newaxis] - r_k[1,np.newaxis,:]
+        z_j = catenary.cat( x_j , a )
+        
+        # Reference model points
+        r_j = np.zeros( ( 3 , m , model.q ) )
+
+        r_j[0,:,:] = r_i[0,:,np.newaxis]
+        r_j[1,:,:] = r_k[1,np.newaxis,:]
+        r_j[2,:,:] = z_j + r_k[2,np.newaxis,:]
+        
+        # All error vectors
+        E = r_i[:,:,np.newaxis] - r_j
+        
+        # Distances between measurements and model ref 
+        D = np.linalg.norm( E , axis = 0 )
+       
+        # Minimum distances to model for all measurements
+        d_min = D.min( axis = 1 )
+        # k_min = D.argmin( axis = 1 ) 
         
     ###################################################
         
@@ -919,7 +954,7 @@ class ArrayEstimator:
         
         # grouping param
         self.d_th         = 1.0
-        self.succes_ratio = 0.9
+        self.succes_ratio = 0.8
         
         
     #####################################################
@@ -1064,7 +1099,7 @@ class ArrayEstimator:
     
     
     #####################################################
-    def is_target_aquired( self, p , pts , ):
+    def is_target_aquired( self, p , pts ):
         
         # generate a list of sample point on the model curve
         r_model  = self.model.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
@@ -1076,7 +1111,7 @@ class ArrayEstimator:
         pts_in = pts[ : , d_min < self.d_th ]
         
         # Ratio of point in range of the model
-        ratio = ( pts_in.shape[1] - pts.shape[1] ) / pts.shape[1]
+        ratio = pts_in.shape[1] / pts.shape[1]
         
         succes = ratio > self.succes_ratio
         
