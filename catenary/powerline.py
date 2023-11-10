@@ -1035,7 +1035,7 @@ class ArrayEstimator:
         self.n_sample  =  201
         
         # default cost function parameters
-        self.method = 'sample'
+        self.method = 'x'
         self.Q      = np.diag( np.zeros( self.n_p ) )
         self.b      = 1.0
         self.l      = 1.0

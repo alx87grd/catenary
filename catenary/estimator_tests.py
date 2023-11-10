@@ -109,7 +109,7 @@ def translation_search_test( search = True , n = 3 , var = 10 ):
 
 
 ############################
-def hard_test( search = True , n = 2, var = 10 ):
+def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
     
     model  = powerline.ArrayModel32()
     
@@ -131,6 +131,7 @@ def hard_test( search = True , n = 2, var = 10 ):
     
     estimator.d_th         = 3.0
     estimator.succes_ratio = 0.7
+    estimator.method       = method
     
     
     for i in range(250):
@@ -167,7 +168,7 @@ def hard_test( search = True , n = 2, var = 10 ):
 
 
 ############################
-def very_hard_test( search = True , n = 2, var = 100 ):
+def very_hard_test( search = True , method = 'x' , n = 5, var = 100 ):
     
     model  = powerline.ArrayModel32()
     
@@ -198,15 +199,16 @@ def very_hard_test( search = True , n = 2, var = 100 ):
     
     estimator.d_th         = 5.0
     estimator.succes_ratio = 0.5
+    estimator.method       = method
     
     
-    for i in range(250):
+    for i in range(100):
         
         pts0 = catenary.generate_test_data( ps[:,0], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
-        pts1 = catenary.generate_test_data( ps[:,1], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts1 = catenary.generate_test_data( ps[:,1], n_obs = 7, n_out = 2 , x_min = -50 , x_max = 50)
         pts2 = catenary.generate_test_data( ps[:,2], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
-        pts3 = catenary.generate_test_data( ps[:,3], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
-        pts4 = catenary.generate_test_data( ps[:,4], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
+        pts3 = catenary.generate_test_data( ps[:,3], n_obs = 6, n_out = 2 , x_min = -50 , x_max = 50)
+        pts4 = catenary.generate_test_data( ps[:,4], n_obs = 3, n_out = 2 , x_min = -30 , x_max = 20)
         
         # pts = np.hstack( ( pts0 , pts1 , pts2 , pts3 , pts4 ))
         
@@ -255,7 +257,8 @@ if __name__ == "__main__":
     # translation_search_test( False )
     # translation_search_test( True )
     
-    hard_test( search = True )
+    # hard_test( method = 'sample' )
+    # hard_test( method = 'x' )
     
-    # very_hard_test()
+    very_hard_test()
 
