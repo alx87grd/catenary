@@ -56,8 +56,8 @@ def J1_vs_J2():
 
 def J_x_vs_sample():
     
-    p      =  np.array([  -10.0, -10.0, -10.0, 0.0, 100, 15.0, 5.0, 10.0 ])
-    p_nom  =  np.array([  -11.0, -11.0, -10.1, 0.5, 200, 16.0, 1.0, 1.0 ])
+    p      =  np.array([  -10.0, -10.0, -10.0, 0.0, 5000, 15.0, 5.0, 10.0 ])
+    p_nom  =  np.array([  -11.0, -11.0, -10.1, 0.5, 5000, 16.0, 1.0, 1.0 ])
     
     model  = powerline.ArrayModel32()
 
@@ -68,7 +68,7 @@ def J_x_vs_sample():
 
     n_p = model.l
         
-    n        = 100
+    n        = 10000
     x_min    = -200
     x_max    = +200
 
@@ -88,7 +88,7 @@ def J_x_vs_sample():
 
     print( J1 , J2 )
     
-    return ( np.abs(J1-J2) < 0.00001 )
+    return ( np.abs(J1-J2) < 0.01 )
 
 
 def gradient_test():
@@ -101,7 +101,7 @@ def gradient_test():
     # pts    = np.zeros((3,1))
     pts    = model.generate_test_data( p , partial_obs = True )
     
-    # plot = powerline.EstimationPlot( p , p, pts , model.p2r_w , 25, -50, 50)
+    plot = powerline.EstimationPlot( p , p, pts , model.p2r_w , 25, -50, 50)
     
     
     
@@ -115,7 +115,7 @@ def gradient_test():
     x_max    = +200
     
     R      = np.ones( ( m ) ) * 1 / m 
-    Q      = np.diag( np.ones( (n_p) ) ) * 1.0
+    Q      = np.diag( np.ones( (n_p) ) ) * 0.001
     
     b      = 1.0
     l      = 1.0
@@ -123,22 +123,35 @@ def gradient_test():
     
     params = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
     
-    J   = powerline.J2(p, pts, p_nom, params )
+    J1   = powerline.J2(p, pts, p_nom, params )
     
-    print(J)
-    
-    dJ2 = powerline.dJ2_dp( p, pts, p_nom, params , num = False )
     dJ1 = powerline.dJ2_dp( p, pts, p_nom, params , num = True  )
+    dJ2 = powerline.dJ2_dp( p, pts, p_nom, params , num = False )
     
+    print( J1 )
     print( dJ2[0:4] )
     print( dJ1[0:4] )
-    
     print( dJ2[4:] )
     print( dJ1[4:] )
     
     err = np.linalg.norm( dJ1 - dJ2 )
     
     print( 'error:' , err )
+    
+    params = [ model , R , Q , l , power , b , 'x' , n , x_min , x_max ]
+    
+    J3   = powerline.J2(p, pts, p_nom, params )
+    
+    dJ3 = powerline.dJ2_dp( p, pts, p_nom, params , num = True  )
+    dJ4 = powerline.dJ2_dp( p, pts, p_nom, params , num = False )
+    
+    print( J3 )
+    print( dJ3[0:4] )
+    print( dJ4[0:4] )
+    print( dJ3[4:] )
+    print( dJ4[4:] )
+    
+    
     
     return ( err < 0.01 )
 

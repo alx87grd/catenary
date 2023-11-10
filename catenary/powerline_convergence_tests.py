@@ -603,15 +603,39 @@ def speed_test( plot = False ):
     p3 = res.x
     
     
+    ###########################
+    # 4
+    ###########################
+    
+    func = lambda p: powerline.J2(p, pts, p_hat, params)
+    jac  = lambda p: powerline.dJ2_dp( p, pts, p_hat, params)
+
+    start_time = time.time()
+    
+    res = minimize( func,
+                    p_hat, 
+                    method='SLSQP',  
+                    bounds=bounds, 
+                    jac = jac,
+                    #constraints=constraints,  
+                    # callback=plot.update_estimation, 
+                    options={'disp':False,'maxiter':500})
+    
+    t4 = time.time() - start_time
+    p4 = res.x
+    
+    
     print( f" Init: {np.array2string(p_hat, precision=2, floatmode='fixed')} \n" +
            f" True: {np.array2string(p, precision=2, floatmode='fixed')} \n"     +
            f" p1: {np.array2string(p1, precision=2, floatmode='fixed')} \n"     +
            f" p2: {np.array2string(p2, precision=2, floatmode='fixed')} \n"   +
-           f" p3: {np.array2string(p3, precision=2, floatmode='fixed')} \n" )
+           f" p3: {np.array2string(p3, precision=2, floatmode='fixed')} \n" +
+           f" p4: {np.array2string(p4, precision=2, floatmode='fixed')} \n" )
     
     print('Sample no grad   t=',t1)
     print('Sample with grad t=',t2)
     print('x no grad t=',t3)
+    print('x with grad t=',t4)
     
     if plot:
     
@@ -620,6 +644,10 @@ def speed_test( plot = False ):
         plot   = powerline.EstimationPlot( p , p1 , pts , model.p2r_w )
         
         plot   = powerline.EstimationPlot( p , p2 , pts , model.p2r_w )
+        
+        plot   = powerline.EstimationPlot( p , p3 , pts , model.p2r_w )
+        
+        plot   = powerline.EstimationPlot( p , p4 , pts , model.p2r_w )
     
     
 

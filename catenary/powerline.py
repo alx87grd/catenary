@@ -704,7 +704,7 @@ def J2( p , pts , p_nom , param  ):
         r_i = ( c_T_w @ r_w )[0:3,:]
         
         # Catenary elevation at ref point
-        x_j = r_i[0,:,np.newaxis] - r_k[1,np.newaxis,:]
+        x_j = r_i[0,:,np.newaxis] - r_k[0,np.newaxis,:]
         z_j = catenary.cat( x_j , a )
         
         # Reference model points
@@ -804,7 +804,6 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         if method == 'sample':
             
             # number of measurements
-            m   = pts.shape[1]
             ind = np.arange(0,m)
                
             # generate a list of sample point on the model curve
@@ -874,7 +873,97 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             
         elif method == 'x':
             
-            raise NotImplementedError
+            x0  = p[0]
+            y0  = p[1]
+            z0  = p[2]
+            psi = p[3]
+            a   = p[4]
+            
+            ind = np.arange(0,m)
+            
+            # Array offsets
+            r_k = model.p2deltas( p )
+            
+            # Transformation Matrix
+            c_T_w = np.linalg.inv( catenary.w_T_c( psi , x0 , y0 , z0 ) )
+            
+            # Compute measurements points positions in local cable frame
+            r_w = np.vstack( [ pts , np.ones(m) ] )
+            r_i = ( c_T_w @ r_w )[0:3,:]
+            
+            # Catenary elevation at ref point
+            x_j = r_i[0,:,np.newaxis] - r_k[0,np.newaxis,:]
+            z_j = catenary.cat( x_j , a )
+            
+            # Reference model points
+            r_j = np.zeros( ( 3 , m , model.q ) )
+
+            r_j[0,:,:] = r_i[0,:,np.newaxis]
+            r_j[1,:,:] = r_k[1,np.newaxis,:]
+            r_j[2,:,:] = z_j + r_k[2,np.newaxis,:]
+            
+            # All error vectors
+            E = r_i[:,:,np.newaxis] - r_j
+            
+            # Distances between measurements and model ref 
+            D = np.linalg.norm( E , axis = 0 )
+           
+            # Minimum distances to model for all measurements
+            d = D.min( axis = 1 )
+            k = D.argmin( axis = 1 ) 
+            e = E[:,ind,k]
+            
+            # Array offsets
+            deltas      = model.p2deltas( p )
+            deltas_grad = model.deltas_grad()
+            
+            xk = deltas[0,k]
+            yk = deltas[1,k]
+            zk = deltas[2,k]
+            xj = x_j[ind,k]
+            
+            # pre-computation
+            s  = np.sin( phi )
+            c  = np.cos( phi )
+            sh = np.sinh( xj / a )
+            ch = np.cosh( xj / a )
+            ex = e[0,:]
+            ey = e[1,:]
+            ez = e[2,:]
+            
+            xi = pts[0,:]
+            yi = pts[1,:]
+            
+            dz_da    = ch - xj / a * sh - 1
+            dz_dxj   = sh
+            dxj_dx0  = -c
+            dxj_dy0  = -s
+            dxj_dpsi = -s * ( xi - x0 ) + c * ( yi - y0 )
+            dxj_dxk  = -1
+
+            # Error Grad for each pts
+            eT_de_dp = np.zeros( ( n_p , pts.shape[1] ) )
+            
+            eT_de_dp[0,:] = ey * +s - ez * dz_dxj * dxj_dx0
+            eT_de_dp[1,:] = ey * -c - ez * dz_dxj * dxj_dy0
+            eT_de_dp[2,:] = ez * -1
+            eT_de_dp[3,:] = ey * ( c * ( x0 - xi ) + s * ( y0 - yi ) ) - ez * dz_dxj * dxj_dpsi
+            eT_de_dp[4,:] = ez * -dz_da
+            
+            # for all offset parameters
+            for i_p in range(5, n_p):
+                
+                dxk_dp = deltas_grad[0,k,i_p-5]
+                dyk_dp = deltas_grad[1,k,i_p-5]
+                dzk_dp = deltas_grad[2,k,i_p-5]
+                
+                eT_de_dp[i_p,:] = ( ex * ( 0.0 * dxk_dp + 0.0 * dyk_dp + 0.0 * dzk_dp )  + 
+                                    ey * ( 0.0 * dxk_dp - 1.0 * dyk_dp + 0.0 * dzk_dp )  +
+                                    ez * ( sh  * dxk_dp - 0.0 * dyk_dp - 1.0 * dzk_dp )  )
+                
+            
+            # Norm grad
+            dd_dp = eT_de_dp / d
         
         ################################
         
