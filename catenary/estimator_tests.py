@@ -59,6 +59,93 @@ def basic_array32_estimator_test():
 
 
 
+############################
+def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
+    
+    
+    model  = powerline.ArrayModelConstant2221()
+
+    p      =  np.array([  50,  50,  50, 1.3, 600, 4.  , 5.  , 6. ])
+    p_hat  =  np.array([   0,   0,   0, 1.0, 800, 3.  , 4.  , 7. ])
+    
+    pts = model.generate_test_data( p , partial_obs = False )
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model , p_hat )
+    
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
+    
+    for i in range(500):
+        
+        pts = model.generate_test_data( p , partial_obs = True )
+        
+        plot.update_pts( pts )
+        
+        start_time = time.time()
+        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n , var )
+        solve_time = time.time() - start_time 
+        
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Solve time : " + str(solve_time) + '\n' + 
+               " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+############################
+def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
+    
+    
+    model  = powerline.ArrayModelConstant2221()
+
+    p      =  np.array([  15, -20,  50, 0.3, 600, 5.  , 5.  , 6. ])
+    p_hat  =  np.array([   0,   0,   0, 0.0, 800, 4.  , 4.  , 7. ])
+    
+    pts = model.generate_test_data( p , n_obs = 10 , x_min = -50, x_max = -40, 
+                            w_l = 0.5, n_out = 3, center = [0,0,0] , 
+                            w_o = 10, partial_obs = False)
+    
+    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    
+    estimator = powerline.ArrayEstimator( model , p_hat )
+    
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
+    
+    for i in range(500):
+        
+        pts = model.generate_test_data(  p , n_obs = 6 , x_min = -50, x_max = -40, 
+                                w_l = 0.5, n_out = 3, center = [0,0,0] , 
+                                w_o = 10, partial_obs = False)
+        
+        plot.update_pts( pts )
+        
+        start_time = time.time()
+        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n , var )
+        solve_time = time.time() - start_time 
+        
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print( " Solve time : " + str(solve_time) + '\n' + 
+               " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+    return estimator
+
+
+
 
 
 ############################
@@ -253,6 +340,9 @@ if __name__ == "__main__":
     
     
     # basic_array32_estimator_test()
+    
+    # basic_array_constant2221_estimator_test()
+    # hard_array_constant2221_estimator_test()
     
     # translation_search_test( False )
     # translation_search_test( True )
