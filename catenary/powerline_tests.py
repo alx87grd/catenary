@@ -41,17 +41,39 @@ def J1_vs_J2():
     l      = 1.0
     power  = 2.0
 
-    params_J1 = [ 'sample' , Q , b , l , power , n , x_min , x_max, model.p2r_w ]
+    params = [ 'sample' , Q , b , l , power , n , x_min , x_max, model.p2r_w ]
 
-    params_J2 = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
+    params = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
 
-    J1 = powerline.J(p, pts, p_nom, params_J1 )
-
-    J2 = powerline.J2(p, pts, p_nom, params_J2 )
-
-    print( J1 , J2 )
+    J = powerline.J(p, pts, p_nom, params )
     
-    return ( np.abs(J1-J2) < 0.00001 )
+    ###########################################
+    
+    
+    # generate a list of sample point on the model curve
+    r_model  = model.p2r_w( p, x_min , x_max , n )[0]
+    
+    # Minimum distances to model for all measurements
+    d_min = catenary.compute_d_min( pts , r_model )
+
+    # Cost shaping function
+    c = catenary.lorentzian( d_min , l , power , b )
+    
+    # Average costs per measurement plus regulation
+    pts_cost = c.sum() / m 
+    
+    # Regulation
+    p_e = p_nom - p
+    
+    # Total cost with regulation
+    J_valid  = pts_cost + p_e.T @ Q @ p_e
+    
+    
+    #######################
+    
+    print( J , J_valid )
+    
+    return ( np.abs(J-J_valid) < 0.00001 )
 
 
 def J_x_vs_sample():
@@ -82,9 +104,9 @@ def J_x_vs_sample():
     params1 = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
     params2 = [ model , R , Q , l , power , b , 'x'      , None , None , None ]
 
-    J1 = powerline.J2(p, pts, p_nom, params1 )
+    J1 = powerline.J(p, pts, p_nom, params1 )
 
-    J2 = powerline.J2(p, pts, p_nom, params2 )
+    J2 = powerline.J(p, pts, p_nom, params2 )
 
     print( J1 , J2 )
     
@@ -101,13 +123,9 @@ def gradient_test():
     # pts    = np.zeros((3,1))
     pts    = model.generate_test_data( p , partial_obs = True )
     
-    plot = powerline.EstimationPlot( p , p, pts , model.p2r_w , 25, -50, 50)
-    
-    
+    # plot = powerline.EstimationPlot( p , p, pts , model.p2r_w , 25, -50, 50)
     
     m   = pts.shape[1]
-    ind = np.arange(0,m)
-    
     n_p = model.l
         
     n        = 100
@@ -123,10 +141,10 @@ def gradient_test():
     
     params = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
     
-    J1   = powerline.J2(p, pts, p_nom, params )
+    J1   = powerline.J(p, pts, p_nom, params )
     
-    dJ1 = powerline.dJ2_dp( p, pts, p_nom, params , num = True  )
-    dJ2 = powerline.dJ2_dp( p, pts, p_nom, params , num = False )
+    dJ1 = powerline.dJ_dp( p, pts, p_nom, params , num = True  )
+    dJ2 = powerline.dJ_dp( p, pts, p_nom, params , num = False )
     
     print( J1 )
     print( dJ2[0:4] )
@@ -136,14 +154,14 @@ def gradient_test():
     
     err = np.linalg.norm( dJ1 - dJ2 )
     
-    print( 'error:' , err )
+    print( 'sample grad error:' , err )
     
     params = [ model , R , Q , l , power , b , 'x' , n , x_min , x_max ]
     
-    J3   = powerline.J2(p, pts, p_nom, params )
+    J3   = powerline.J(p, pts, p_nom, params )
     
-    dJ3 = powerline.dJ2_dp( p, pts, p_nom, params , num = True  )
-    dJ4 = powerline.dJ2_dp( p, pts, p_nom, params , num = False )
+    dJ3 = powerline.dJ_dp( p, pts, p_nom, params , num = True  )
+    dJ4 = powerline.dJ_dp( p, pts, p_nom, params , num = False )
     
     print( J3 )
     print( dJ3[0:4] )
@@ -151,9 +169,12 @@ def gradient_test():
     print( dJ3[4:] )
     print( dJ4[4:] )
     
+    err2 = np.linalg.norm( dJ4 - dJ3 )
+    
+    print( 'x grad error:' , err2 )
     
     
-    return ( err < 0.01 )
+    return ( err2 < 0.01 )
 
     
 
@@ -171,7 +192,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     print('J2 test : ', J1_vs_J2())
-    print('J x test : ', J_x_vs_sample())
+    print('J x vs sample test : ', J_x_vs_sample())
     print('gradient test : ', gradient_test())
 
 

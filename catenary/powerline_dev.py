@@ -127,15 +127,13 @@ J3 = R.T @ c + p_e.T @ Q @ p_e
 # x_max  = param[7]
 # p2r_w  = param[8]
 
-params_J1 = [ 'sample' , Q , b , l , power , n , x_min , x_max, model.p2r_w ]
 
 params_J2 = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
 
-J1 = powerline.J(p, pts, p_nom, params_J1 )
 
-J2 = powerline.J2(p, pts, p_nom, params_J2 )
+J2 = powerline.J(p, pts, p_nom, params_J2 )
 
-print( J1 , J2 , J3)
+print( J2 , J3)
 # # print( J3 )
 # print('j: ', j )
 # print('k: ', k )
@@ -212,10 +210,10 @@ dJ_dp = R.T @ dc_dp.T - 2 * p_e.T @ Q
 # print( dJ_dp )
 
 # dJ2 = dJ_dp
-dJ2 = powerline.dJ2_dp( p, pts, p_nom, params_J2 , num = False )
+dJ2 = powerline.dJ_dp( p, pts, p_nom, params_J2 , num = False )
 
 
-dJ1 = powerline.dJ2_dp( p, pts, p_nom, params_J2 , num = True )
+dJ1 = powerline.dJ_dp( p, pts, p_nom, params_J2 , num = True )
 print( dJ2[0:4] )
 print( dJ1[0:4] )
 

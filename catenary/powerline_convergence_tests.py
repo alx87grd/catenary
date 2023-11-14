@@ -39,18 +39,30 @@ def basic_array3_convergence_test():
     
     model  = powerline.ArrayModel()
     
-    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 55 , -50 , 50, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 100
+    x_min  = -50
+    x_max  = +50
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
+    
     
     start_time = time.time()
     plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
     
     func = lambda p: powerline.J(p, pts, p_init, params)
+    grad = lambda p: powerline.dJ_dp(p, pts, p_init, params)
     
     res = minimize( func,
                     p_init, 
                     method='SLSQP',  
                     bounds=bounds, 
+                    jac=grad,
                     #constraints=constraints,  
                     callback=plot.update_estimation, 
                     options={'disp':True,'maxiter':500})
@@ -89,8 +101,17 @@ def basic_array32_convergence_test():
     
     bounds = [ (0,200), (0,200) , (0,200) , (0,0.3) , (10,200) , (15,30), (15,15) , (15,30)]
     
-    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0]) ,
-                1.0 , 1.0 , 2 , 55 , -50 , 50, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = np.diag( np.ones(p.shape[0])  ) * 0.0
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 100
+    x_min  = -50
+    x_max  = +50
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     start_time = time.time()
     plot = powerline.EstimationPlot( p , p_init , pts , model.p2r_w , 25, -50, 50)
@@ -120,7 +141,7 @@ def basic_array32_tracking_test():
     model  = powerline.ArrayModel32()
 
     p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
-    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25    ])
+    p_hat  =  np.array([ 100, 100, 100, 1.0, 300, 40.  , 25.  , 25  ])
     
     pts = model.generate_test_data( p , partial_obs = True )
     
@@ -128,17 +149,28 @@ def basic_array32_tracking_test():
     
     bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) , (15,60), (15,50) , (15,50)]
     
-    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
-                1.0 , 1.0 , 2 , 501 , -200 , 200 , model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     
-    for i in range(500):
+    for i in range(200):
         
         pts = model.generate_test_data( p , partial_obs = True )
         
         plot.update_pts( pts )
     
         start_time = time.time()
+        
+        params[1] = np.ones(pts.shape[1]) / pts.shape[1]
         
         func = lambda p: powerline.J(p, pts, p_hat, params)
     
@@ -178,8 +210,17 @@ def hard_array32_tracking_test():
     
     bounds = [ (0,200), (0,200) , (0,200) , (0.5,1.5) , (100,2000) , (30,60), (25,25) , (25,60)]
     
-    params = [ 'sample' , 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
-                1.0 , 1.0 , 2 , 501 , -200 , 200, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     
     for i in range(500):
@@ -191,6 +232,8 @@ def hard_array32_tracking_test():
         plot.update_pts( pts )
     
         start_time = time.time()
+        
+        params[1] = np.ones(pts.shape[1]) / pts.shape[1]
         
         func = lambda p: powerline.J(p, pts, p_hat, params)
     
@@ -223,8 +266,18 @@ def hard_array32_tracking_local_minima_analysis( model =  powerline.ArrayModel32
                                          x_min = -100, x_max = -70, n_out = 10 ,
                                          center = [-50,-50,-50] , w_o = 10 )
     
-    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
-                1.0 , 1.0 , 2 , 501 , -200 , 200, model.p2r_w ] 
+    
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
     
@@ -269,10 +322,20 @@ def basic_array2221_tracking_test():
     bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) ,
               (40,60), (40,80) , (40,60) , (20,40), (20,40) , (20,40) ]
     
-    params = [ 'sample' , 2 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
+    
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 2 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
                                         0.0001 , 0.002 , 0.002 , 0.002 , 
-                                        0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 201 , -200 , 200 , model.p2r_w ] 
+                                        0.002 , 0.002 , 0.002 ])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     
     for i in range(50):
@@ -282,6 +345,8 @@ def basic_array2221_tracking_test():
         plot.update_pts( pts )
     
         start_time = time.time()
+        
+        params[1] = np.ones(pts.shape[1]) / pts.shape[1]
         
         func = lambda p: powerline.J(p, pts, p_hat, params)
     
@@ -321,10 +386,19 @@ def hard_array2221_tracking_test():
     bounds = [ (0,200), (0,200) , (0,200) , (0,3.14) , (100,2000) ,
               (40,60), (40,80) , (40,60) , (20,40), (20,40) , (20,40) ]
     
-    params = [ 'sample' , 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 ,
                                         0.0001 , 0.002 , 0.002 , 0.002 , 
-                                        0.002 , 0.002 , 0.002 ]) , 
-              1.0 , 1.0 , 2 , 201 , -200 , 200 , model.p2r_w ] 
+                                        0.002 , 0.002 , 0.002 ])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     
     for i in range(100):
@@ -336,6 +410,8 @@ def hard_array2221_tracking_test():
         plot.update_pts( pts )
     
         start_time = time.time()
+        
+        params[1] = np.ones(pts.shape[1]) / pts.shape[1]
         
         func = lambda p: powerline.J(p, pts, p_hat, params)
     
@@ -376,9 +452,17 @@ def hard_arrayconstant2221_tracking_test():
     bounds = [ (-5,5), (-5,5) , (-15,15) , (-0.3,0.3) , (100,2000) ,
               (3,6), (3,6) , (5,15) ]
     
-    params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]) ,
-                1.0 , 1.0 , 2 , 201 , -200 , 200, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
     
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     for i in range(500):
         
@@ -389,6 +473,8 @@ def hard_arrayconstant2221_tracking_test():
         plot.update_pts( pts )
     
         start_time = time.time()
+        
+        params[1] = np.ones(pts.shape[1]) / pts.shape[1]
         
         func = lambda p: powerline.J(p, pts, p_hat, params)
     
@@ -423,8 +509,17 @@ def arrayconstant2221_cost_shape_analysis():
                                          x_min = -100, x_max = -50, n_out = 10 ,
                                          center = [0,0,0] , w_o = 20 )
     
-    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 501
+    x_min  = -200
+    x_max  = +200
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
     
@@ -468,8 +563,17 @@ def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
                                          x_min = -100, x_max = -50, n_out = 10 ,
                                          center = [0,0,0] , w_o = 20 )
     
-    params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20, model.p2r_w ] 
+    R      = np.ones(pts.shape[1]) / pts.shape[1]
+    Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
+    l      = 1.0
+    power  = 2.0
+    b      = 1.0
+    method = 'x'
+    n      = 25
+    x_min  = -20
+    x_max  = +20
+    
+    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
     
     plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
     
@@ -541,7 +645,7 @@ def speed_test( plot = False ):
     # 1
     ###########################
     
-    func = lambda p: powerline.J2(p, pts, p_hat, params)
+    func = lambda p: powerline.J(p, pts, p_hat, params)
     
 
     start_time = time.time()
@@ -563,7 +667,7 @@ def speed_test( plot = False ):
     ###########################
     
     
-    jac = lambda p: powerline.dJ2_dp( p, pts, p_hat, params)
+    jac = lambda p: powerline.dJ_dp( p, pts, p_hat, params)
 
     start_time = time.time()
     
@@ -585,7 +689,7 @@ def speed_test( plot = False ):
     
     params[6] = 'x'
     
-    func = lambda p: powerline.J2(p, pts, p_hat, params)
+    func = lambda p: powerline.J(p, pts, p_hat, params)
     
 
     start_time = time.time()
@@ -607,8 +711,7 @@ def speed_test( plot = False ):
     # 4
     ###########################
     
-    func = lambda p: powerline.J2(p, pts, p_hat, params)
-    jac  = lambda p: powerline.dJ2_dp( p, pts, p_hat, params)
+    jac  = lambda p: powerline.dJ_dp( p, pts, p_hat, params)
 
     start_time = time.time()
     
@@ -665,15 +768,15 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    # basic_array3_convergence_test()
+    basic_array3_convergence_test()
     
-    # basic_array32_convergence_test()
+    basic_array32_convergence_test()
     
-    # basic_array32_tracking_test()
+    basic_array32_tracking_test()
     
-    # hard_array32_tracking_test()
+    hard_array32_tracking_test()
     
-    # hard_array32_tracking_local_minima_analysis()
+    hard_array32_tracking_local_minima_analysis()
     
     # basic_array2221_tracking_test()
     

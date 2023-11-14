@@ -34,7 +34,7 @@ def basic_array32_estimator_test():
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
-    for i in range(500):
+    for i in range(300):
         
         pts = model.generate_test_data( p , partial_obs = True )
         
@@ -76,7 +76,7 @@ def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
     
-    for i in range(500):
+    for i in range(100):
         
         pts = model.generate_test_data( p , partial_obs = True )
         
@@ -119,7 +119,7 @@ def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
     
-    for i in range(500):
+    for i in range(100):
         
         pts = model.generate_test_data(  p , n_obs = 6 , x_min = -50, x_max = -40, 
                                 w_l = 0.5, n_out = 3, center = [0,0,0] , 
@@ -168,7 +168,7 @@ def translation_search_test( search = True , n = 3 , var = 10 ):
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
     
-    for i in range(25):
+    for i in range(50):
         
         pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
                                              x_min = -100, x_max = -70, n_out = 5 ,
@@ -221,7 +221,7 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
     estimator.method       = method
     
     
-    for i in range(250):
+    for i in range(50):
         
         pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
                                              x_min = -100, x_max = -70, n_out = 5 ,
@@ -289,7 +289,7 @@ def very_hard_test( search = True , method = 'x' , n = 5, var = 100 ):
     estimator.method       = method
     
     
-    for i in range(100):
+    for i in range(50):
         
         pts0 = catenary.generate_test_data( ps[:,0], n_obs = 10, n_out = 2 , x_min = -50 , x_max = 50)
         pts1 = catenary.generate_test_data( ps[:,1], n_obs = 7, n_out = 2 , x_min = -50 , x_max = 50)
@@ -339,16 +339,16 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    # basic_array32_estimator_test()
+    basic_array32_estimator_test()
     
-    # basic_array_constant2221_estimator_test()
-    # hard_array_constant2221_estimator_test()
+    basic_array_constant2221_estimator_test()
+    hard_array_constant2221_estimator_test()
     
     # translation_search_test( False )
-    # translation_search_test( True )
+    translation_search_test( True )
     
     # hard_test( method = 'sample' )
-    # hard_test( method = 'x' )
+    hard_test( method = 'x' )
     
     very_hard_test()
 

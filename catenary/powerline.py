@@ -600,39 +600,42 @@ def find_closest_distance_cable_point( p , pts , p2r_w , x_min = -200 , x_max = 
 
 
 
-########################################################
-def J( p , pts , p_nom , param ):
+
+
+###############################################################################
+# Cost function of match between pts cloud and an ArrayModel parameter vector
+###############################################################################
+
+def J( p , pts , p_nom , param  ):
     """ 
-    Cost function for curve fitting a catenary model on a point cloud
+    cost function for curve fitting a catenary model on a point cloud
     
-    J = average_cost_per_measurement + regulation_term
+    J = sum_of_cost_per_measurement + regulation_term
     
     see attached notes.
     
     inputs
     --------
-    p     : 8x1 parameter vector
-    pts   : 3xm cloud point
-    p_nom : 8x1 expected parameter vector ( optionnal for regulation )
-    param : list of cost function parameter and options
+    p     : dim (n_p) parameter vector
+    pts   : dim (3,m) list of m 3d measurement points
+    p_nom : dim (n_p) expected parameter vector ( optionnal for regulation )
     
-    default_param = [ method = 'sample' , 
-                     Q = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                     b = 1.0 , 
-                     l = 1.0 , 
-                     power = 2 , 
-                     n = 1000 , 
-                     x_min = -200 , 
-                     x_max = 200 ,
-                     r2w   = fonction used to generate samples] 
+    param : list of cost function parameter and options
+        
+    [ model , R , Q , l , power , b , method , n , x_min , x_max ]
+    
+    model  : instance of ArrayModel
+    
+    R      : dim (m) weight for each measurement points
+    Q      : dim (n_p,n_p) regulation weight matrix
+    
+    b      : scalar parameter in lorentzian function
+    l      : scalar parameter in lorentzian function
+    power  : scalar parameter in lorentzian function
     
     method = 'sample' : sample-based brute force scheme
     method = 'x'      : data association is based on local x in cat frame
     
-    Q      : 8x8 regulation weight matrix
-    b      : scalar parameter in lorentzian function
-    l      : scalar parameter in lorentzian function
-    power  : scalar parameter in lorentzian function
     n      : number of sample (only used with method = 'sample' )
     x_min  : x start point of model catenary (only used with method = 'sample')
     x_max  : x end point of model catenary (only used with method = 'sample' )
@@ -641,61 +644,6 @@ def J( p , pts , p_nom , param ):
     ----------
     J : cost scalar
     
-    """
-    
-    m      = pts.shape[1]  # number of measurements
-    
-    method = param[0]
-    Q      = param[1]
-    b      = param[2]
-    l      = param[3]
-    power  = param[4]
-    n      = param[5]
-    x_min  = param[6]
-    x_max  = param[7]
-    p2r_w  = param[8]
-    
-    ###################################################
-    if method == 'sample':
-        """ data association is sampled-based """
-    
-        # generate a list of sample point on the model curve
-        r_model  = p2r_w( p, x_min , x_max , n )[0]
-        
-        # Minimum distances to model for all measurements
-        d_min = catenary.compute_d_min( pts , r_model )
-    
-    ###################################################
-    elif method == 'x':
-        """ data association is based on local x-coord in cat frame """
-        
-        raise NotImplementedError
-        
-    ###################################################
-        
-    # Cost shaping function
-    c = catenary.lorentzian( d_min , l , power , b )
-    
-    # Average costs per measurement plus regulation
-    pts_cost = c.sum() / m 
-    
-    # Regulation
-    p_e = p_nom - p
-    
-    # Total cost with regulation
-    cost = pts_cost + p_e.T @ Q @ p_e
-    
-    return cost
-
-
-
-###############################################################################
-# New cost function
-###############################################################################
-def J2( p , pts , p_nom , param  ):
-    """ 
-    
-    params = [ model , R , Q , l , power , b , 'sample' , n , x_min , x_max ]
     """
     
     m      = pts.shape[1]    # number of measurements
@@ -766,7 +714,7 @@ def J2( p , pts , p_nom , param  ):
     
     # From distance to individual pts cost
     if not ( l == 0 ):
-        # Cost shaping function
+        # lorentzian cost shaping function
         c = catenary.lorentzian( d_min , l , power , b )
         
     else:
@@ -783,7 +731,7 @@ def J2( p , pts , p_nom , param  ):
 
 
 ######################################################
-def dJ2_dp( p , pts , p_nom , param , num = False ):
+def dJ_dp( p , pts , p_nom , param , num = False ):
     """ 
     
     Gradient of J with respect to parameters p
@@ -813,8 +761,8 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             pm    = p.copy()
             pp[i] = p[i] + dp[i]
             pm[i] = p[i] - dp[i]
-            cp    = J2( pp , pts , p_nom , param )
-            cm    = J2( pm , pts , p_nom , param )
+            cp    = J( pp , pts , p_nom , param )
+            cm    = J( pm , pts , p_nom , param )
             
             dJ_dp[i] = ( cp - cm ) / ( 2.0 * dp[i] )
     
@@ -835,6 +783,9 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
         x_min  = param[8]        # start of sample points (for sample method)
         x_max  = param[9]        # end of sample points (for sample method)
         
+        x0  = p[0]
+        y0  = p[1]
+        z0  = p[2]
         phi = p[3]
         a   = p[4]
         
@@ -910,19 +861,13 @@ def dJ2_dp( p , pts , p_nom , param , num = False ):
             
         elif method == 'x':
             
-            x0  = p[0]
-            y0  = p[1]
-            z0  = p[2]
-            psi = p[3]
-            a   = p[4]
-            
             ind = np.arange(0,m)
             
             # Array offsets
             r_k = model.p2deltas( p )
             
             # Transformation Matrix
-            c_T_w = np.linalg.inv( catenary.w_T_c( psi , x0 , y0 , z0 ) )
+            c_T_w = np.linalg.inv( catenary.w_T_c( phi , x0 , y0 , z0 ) )
             
             # Compute measurements points positions in local cable frame
             r_w = np.vstack( [ pts , np.ones(m) ] )
@@ -1164,8 +1109,8 @@ class ArrayEstimator:
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
-        func   = lambda p: J2(p, pts, p_init, param)
-        grad   = lambda p: dJ2_dp( p, pts, p_init, param , num = False )
+        func   = lambda p: J(p, pts, p_init, param)
+        grad   = lambda p: dJ_dp( p, pts, p_init, param , num = False )
         
         res = minimize( func,
                         p_init, 
@@ -1187,8 +1132,8 @@ class ArrayEstimator:
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
-        func   = lambda p: J2(p, pts, p_init, param)
-        grad   = lambda p: dJ2_dp( p, pts, p_init, param , num = False )
+        func   = lambda p: J(p, pts, p_init, param)
+        grad   = lambda p: dJ_dp( p, pts, p_init, param , num = False )
         
         # variation to params
         rng    = np.random.default_rng( seed = None )
