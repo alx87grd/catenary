@@ -16,6 +16,7 @@ import catenary
 # Unit tests
 ###########################
 
+
 def cat_test():
     
     t1 = ( catenary.cat( 0 , 1 )   == 0.0 )
@@ -40,17 +41,6 @@ def p2r_w_test():
     return (r_w.shape == (3,101) ) & ( x_c.shape == (101,) )
 
 
-
-#######################
-
-
-
-
-
-
-
-#######################
-
 def noisy_p2r_w_test():
     
     p = np.array([0,0,0,0,1])
@@ -58,22 +48,6 @@ def noisy_p2r_w_test():
     r = catenary.noisy_p2r_w( p , -50 , 50 , 101 , 0.5  )
     
     return (r.shape == (3,101) ) 
-
-
-def multiples_noisy_p2r_w_test():
-    
-    p = np.array([ [0,0,0,0,1] , [0,0,0,0,2] ] ).T
-    
-    r = catenary.multiples_noisy_p2r_w( p , [-10, -5], [10,-5] , [30,60] , [ 0.5 , 0.0 ] )
-    
-    return (r.shape == (3,90) ) 
-
-
-def outliers_test():
-    
-    r = catenary.outliers( 10 , [1,2,3] , 50. )
-    
-    return (r.shape == (3,10) ) 
 
 
 def outliers_test():
@@ -114,57 +88,6 @@ def gradient_test( method = 'sample' ):
     return succes
 
 
-
-
-###########################
-# Ploting tests
-###########################
-
-def plot_test():
-    
-    
-    p_true  =  np.array([ 50 , 50 , 50 , 0.2 , 500 ])
-    p_hat   =  np.array([  0 ,  0 ,  0 , 0   , 1000 ])
-    
-    pts   = catenary.generate_test_data( p_true , n_obs = 20 , x_min = -100, 
-                                        x_max = 100, w_l = 0.5, n_out = 10, 
-                                        center = [0,0,0] , w_o = 100 )
-
-    plot  = catenary.CatenaryEstimationPlot(  p_true , p_hat , pts )
-    
-    return True
-    
-    
-    
-def animation_test():
-    
-    
-    p0      =  np.array([ 50 , 50 , 50 , 0.2 , 500 ])
-    dp_dt   =  np.array([  1 ,  1 , 10 , 0.01 , 0  ])
-    
-    p_hat   =  np.array([  0 ,  0 ,  0 , 0   , 1000 ])
-    
-    t = np.linspace( 0 , 10, 101 )
-    
-    ( pts , p ) = catenary.generate_test_data_sequence( 0, p0 , dp_dt , partial_obs = True, 
-                                     n_obs = 20 , x_min = -100, x_max = 100, 
-                                     w_l = 0.5, n_out = 10, center = [0,0,0] , 
-                                     w_o = 100 )
-
-    plot  = catenary.CatenaryEstimationPlot(  p , p_hat , pts )
-    
-    for i in range(101):
-        
-        ( pts , p )  = catenary.generate_test_data_sequence( t[i], p0 , dp_dt , 
-                                                    partial_obs = True, 
-                                         n_obs = 20 , x_min = -100, x_max = 100, 
-                                         w_l = 0.5, n_out = 10, center = [0,0,0] , 
-                                         w_o = 100 )
-        plot.update_true( p )
-        plot.update_pts( pts )
-        
-    
-    return True
         
 
 ###########################
@@ -226,20 +149,22 @@ def tracking_basic_test( method = 'sample' ,  grad = False , partial_obs = False
     
     t = np.linspace( 0 , 5, 51 )
     
-    ( pts , p ) = catenary.generate_test_data_sequence( 0, p0 , dp_dt , partial_obs, 
+    pts  = catenary.generate_test_data( p0 , partial_obs, 
                                      n_obs = 20 , x_min = -30, x_max = 30, 
                                      w_l = 0.5, n_out = 10, center = [50,50,50] , 
-                                     w_o = 100 )
+                                     w_o = 100)
     
-    plot  = catenary.CatenaryEstimationPlot( p , p_hat , pts , 50 , -50 , +50 )
+    plot  = catenary.CatenaryEstimationPlot( p0 , p_hat , pts , 50 , -50 , +50 )
     
     for i in range(51):
         
-        ( pts , p )  = catenary.generate_test_data_sequence( t[i], p0 , dp_dt , 
-                                                    partial_obs, 
-                                         n_obs = 20 , x_min = -30, x_max = 30, 
-                                         w_l = 0.5, n_out = 10, center = [50,50,50] , 
-                                         w_o = 100 )
+        p    = p0 + dp_dt * t[i]
+        
+        pts  = catenary.generate_test_data( p , partial_obs, n_obs = 20 , 
+                                            x_min = -30, x_max = 30, w_l = 0.5, 
+                                            n_out = 10, center = [50,50,50] , w_o = 100)
+        
+        
         plot.update_true( p )
         plot.update_pts( pts )
         
@@ -276,7 +201,7 @@ def tracking_basic_test( method = 'sample' ,  grad = False , partial_obs = False
         
         
         
-def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = False ):
+def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = True ):
     
     p0      =  np.array([  0 ,  0 ,  0 , 0.2 , 500 ])
     dp_dt   =  np.array([  1 ,  1 , 10 , 0.01 , 0  ])
@@ -285,26 +210,26 @@ def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = Fa
     
     t = np.linspace( 0 , 2, 21 )
     
-    ( pts , p ) = catenary.generate_test_data_sequence( 0, p0 , dp_dt , partial_obs = True, 
-                                     n_obs = 20 , x_min = -100, x_max = 100, 
-                                     w_l = 0.5, n_out = 10, center = [0,0,0] , 
-                                     w_o = 100 )
+    pts  = catenary.generate_test_data( p0 , partial_obs, n_obs = 20 , 
+                                        x_min = -100, x_max = 100, 
+                                        w_l = 0.5, n_out = 10, 
+                                        center = [0,0,0] , w_o = 100 )
 
-    plot  = catenary.CatenaryEstimationPlot(  p , p_hat , pts )
+    plot  = catenary.CatenaryEstimationPlot(  p0 , p_hat , pts )
     
     for i in range(21):
         
-        ( pts , p )  = catenary.generate_test_data_sequence( t[i], p0 , dp_dt , 
-                                                    partial_obs = True, 
-                                         n_obs = 20 , x_min = -100, x_max = 100, 
-                                         w_l = 0.5, n_out = 10, center = [0,0,0] , 
-                                         w_o = 100 )
+        p    = p0 + dp_dt * t[i]
+        
+        pts  = catenary.generate_test_data( p , partial_obs, n_obs = 20 , 
+                                            x_min = -100, x_max = 100, 
+                                            w_l = 0.5, n_out = 10, 
+                                            center = [0,0,0] , w_o = 100 )
+        
         plot.update_true( p )
         plot.update_pts( pts )
         
         bounds = [ (0,500) , (0,500), (0,500) , (0,3.14) , (100,2000) ]
-        # params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-        #             1.0 , 1.0 , 2 , 25 , -20 , 20] 
         
         params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 ]) ,
                     1.0 , 1.0 , 2 , 25 , -20 , 20] 
@@ -538,9 +463,8 @@ def speed_test():
     
     
 ###########################
-# Speed tests
+# Drake solver tests
 ###########################
-        
 
 
 def drake_test():
@@ -624,56 +548,20 @@ if __name__ == "__main__":
     print('catenary.w_T_c: ', w_T_c_test())
     print('catenary.p2r_w: ', p2r_w_test())
     print('catenary.noisy_p2r_w: ', noisy_p2r_w_test())
-    print('catenary.multiples_noisy_p2r_w: ', multiples_noisy_p2r_w_test())
     print('catenary.outliers: ', outliers_test())
     print('catenary.dJ_dp (samples) : ', gradient_test())
     print('catenary.dJ_dp (x) : ', gradient_test( 'x' ) )
     
     
-    # plot_test()
-    # # animation_test()
+    convergence_basic_test()
+    convergence_basic_test( method = 'x' )
+    convergence_basic_test( grad = True )
+    convergence_basic_test( method = 'x' , grad = True )
     
-    # convergence_basic_test()
-    # convergence_basic_test( method = 'x' )
-    # convergence_basic_test( grad = True )
-    # convergence_basic_test( method = 'x' , grad = True )
+    tracking_basic_test( grad = True )
     
-    # # # # tracking_basic_test()
-    # tracking_basic_test( grad = True )
+    tracking_advanced_test()
     
-    # tracking_advanced_test()
-    
-    # grouping_test()
+    grouping_test()
     
     speed_test()
-    
-    
-    
-    # p_true  =  np.array([ 32.0, 43.0, 77.0, 1.3, 53.0])
-    # p_init  =  np.array([ 10.0, 10.0, 10.0, 2.0, 80.0])
-    
-    # pts  = catenary.generate_test_data( p_true , n_obs = 20 , x_min = -30,
-    #                                    x_max = 30, w_l = 0.5, n_out = 10, 
-    #                                    center = [50,50,50] , w_o = 100 )
-    
-    # plot  = catenary.CatenaryEstimationPlot(  p_true , p_init , pts , 50 , -50 , +50 )
-    
-    # bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
-    
-    # params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-    #             1.0 , 1.0 , 2 , 25 , -20 , 20] 
-    
-    # start_time = time.time()
-    
-    # func = lambda p: catenary.J(p, pts, p_init, params)
-    
-    
-    # res = minimize( func,
-    #                 p_init, 
-    #                 method='SLSQP',  
-    #                 bounds=bounds, 
-    #                 #constraints=constraints,  
-    #                 callback=plot.update_estimation, 
-    #                 options={'disp':True,'maxiter':500})
-    
-    # p_hat = res.x

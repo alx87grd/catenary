@@ -475,6 +475,8 @@ def get_catanery_group( p , pts , d_th = 1.0 , n_sample = 1000 , x_min = -200, x
     return pts_in
 
 
+
+
 # ###########################
 # Plotting
 # ###########################
@@ -604,26 +606,6 @@ def noisy_p2r_w( p , x_min = -200, x_max = 200 , n = 400, w = 0.5 ):
     
     return r_noisy
 
-############################
-def multiples_noisy_p2r_w( p , x_min, x_max , n , w ):
-    """
-    Create 3D world pts for a list of catenary parameters vector
-
-    """
-    
-    m = p.shape[1]
-    
-    pts = noisy_p2r_w( p[:,0] , x_min[0], x_max[0] , n[0], w[0] )
-    
-    for i in range(1,m):
-
-        r = noisy_p2r_w( p[:,i] , x_min[i], x_max[i] , n[i], w[i] )
-        
-        pts = np.append( pts , r , axis = 1 )
-
-    
-    return pts
-
 
 ############################
 def outliers( n = 10, center = [0,0,0] , w = 100 ):
@@ -647,35 +629,13 @@ def outliers( n = 10, center = [0,0,0] , w = 100 ):
 
 
 ############################
-def generate_test_data( p , n_obs = 20 , x_min = -100, x_max = 100, w_l = 0.5,
-                        n_out = 10, center = [0,0,0] , w_o = 100 ):
+def generate_test_data( p ,  partial_obs = False, n_obs = 20, x_min = -100, 
+                        x_max = 100, w_l = 0.5, n_out = 10, center = [0,0,0], 
+                        w_o = 100 ):
     """
     generate pts for a line and outliers
     
     """
-    
-    r_line = noisy_p2r_w( p , x_min , x_max , n_obs , w_l )
-        
-    r_out  = outliers( n_out, center , w_o )
-        
-    pts = np.append( r_line , r_out , axis = 1 )
-    
-    return pts
-
-
-############################
-def generate_test_data_sequence ( t, p0 , dp_dt , partial_obs = True, 
-                                 n_obs = 20 , x_min = -100, x_max = 100, 
-                                 w_l = 0.5, n_out = 10, center = [0,0,0] , 
-                                 w_o = 100 ):
-    """
-    generate pts for a line and outliers with linear motion of p
-    
-    p = p0 + t * dp_dt
-    
-    """
-    
-    p = p0 + t * dp_dt
     
     if partial_obs:
         
@@ -689,7 +649,9 @@ def generate_test_data_sequence ( t, p0 , dp_dt , partial_obs = True,
         
     pts = np.append( r_line , r_out , axis = 1 )
     
-    return ( pts , p )
+    return pts
+
+
 
     
 

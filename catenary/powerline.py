@@ -112,7 +112,7 @@ class ArrayModel:
         ----------
         r_w_flat : dim (3,n * q)  all world pts
         r_w      : dim (3,n,q)    all world pts splitted by line id
-        x_c      : dim (n) array of x coord in catenary frame
+        x_c      : dim (n)        array of x coord in catenary frame
         
         """
         
@@ -135,7 +135,7 @@ class ArrayModel:
         r_w  = np.zeros((4,n,self.q))
         
         # Foward kinematic for all lines in the array
-        for i in range(self.q):
+        for i in range( self.q ):
         
             r_c[0,:,i] = x_c + delta[0,i]
             r_c[1,:,i] = 0.0 + delta[1,i]
@@ -231,7 +231,8 @@ class ArrayModel:
             pts = np.append( pts , r_line , axis = 1 )
         
         return pts
-    
+
+
     
 ###############################################################################
 class ArrayModel32( ArrayModel ):
