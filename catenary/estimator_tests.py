@@ -325,6 +325,93 @@ def very_hard_test( search = True , method = 'x' , n = 5, var = 100 ):
         
         
     return estimator
+
+
+
+############################
+def quad_test( search = True , method = 'x' , n = 5, var = 10 ):
+    
+    
+    # 3 x quad powerlines
+    quad  = powerline.Quad()
+    
+    p4_1  =  np.array([  50,  40,  50, 0.0, 500, 0.2  , 0.4  ])
+    p4_2  =  np.array([  50,  50,  50, 0.0, 500, 0.2  , 0.4  ])
+    p4_3  =  np.array([  50,  60,  50, 0.0, 500, 0.2  , 0.4  ])
+    
+    pts4_1 = quad.generate_test_data( p4_1 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+    pts4_2 = quad.generate_test_data( p4_2 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+    pts4_3 = quad.generate_test_data( p4_3 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+    
+    # 2x guard cables
+    pg1    =  np.array([  50,  45,  60, 0.0, 800 ])
+    pg2    =  np.array([  50,  55,  60, 0.0, 800 ])
+
+    pts_g1 = catenary.generate_test_data( pg1, n_obs = 10, n_out = 2 , x_min = +80 , x_max = 100)
+    pts_g2 = catenary.generate_test_data( pg2, n_obs = 10, n_out = 2 , x_min = +80 , x_max = 100)
+    
+    pts = np.hstack( ( pts4_1 , pts4_2 , pts4_3 , pts_g1 , pts_g2 ))
+    
+    #  Estimation Model
+    model  = powerline.ArrayModel32()
+    
+    p_true =  np.array([  50,  50,  50, 0.0, 500, 10.  , 5.  , 10. ])
+    p_hat  =  np.array([  0,  0,  0, 0.3, 800, 9.  , 4.  , 9. ])
+    
+    
+    plot = powerline.EstimationPlot( p_true , p_hat , pts , model.p2r_w )
+    
+    callback = None #plot.update_estimation
+    
+    estimator   = powerline.ArrayEstimator( model , p_hat )
+    
+    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    
+    estimator.method       = method
+    
+    for i in range(50):
+        
+        # 3 x quad powerlines
+        quad  = powerline.Quad()
+        
+        p4_1  =  np.array([  50,  40,  50, 0.0, 500, 0.2  , 0.4  ])
+        p4_2  =  np.array([  50,  50,  50, 0.0, 500, 0.2  , 0.4  ])
+        p4_3  =  np.array([  50,  60,  50, 0.0, 500, 0.2  , 0.4  ])
+        
+        pts4_1 = quad.generate_test_data( p4_1 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+        pts4_2 = quad.generate_test_data( p4_2 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+        pts4_3 = quad.generate_test_data( p4_3 , n_obs = 16, w_l = 0.05 , n_out = 2 , x_min = +80 , x_max = 100)
+        
+        # 2x guard cables
+        pg1    =  np.array([  50,  45,  60, 0.0, 800 ])
+        pg2    =  np.array([  50,  55,  60, 0.0, 800 ])
+
+        pts_g1 = catenary.generate_test_data( pg1, n_obs = 10, n_out = 2 , x_min = +80 , x_max = 100)
+        pts_g2 = catenary.generate_test_data( pg2, n_obs = 10, n_out = 2 , x_min = +80 , x_max = 100)
+        
+        pts = np.hstack( ( pts4_1 , pts4_2 , pts4_3 , pts_g1 , pts_g2 ))
+        
+        plot.update_pts( pts )
+    
+        start_time = time.time()
+        
+        if search:
+            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var , callback )
+            
+        else:
+            p_hat  = estimator.solve( pts , p_hat , callback )
+            
+        solve_time = time.time() - start_time 
+            
+        target = estimator.is_target_aquired( p_hat , pts)
+        
+        plot.update_estimation( p_hat )
+        
+        
+        print(  " Solve time : " + str(solve_time) + '\n' + 
+                " Target acquired: " + str(target) + '\n' +
+                f" p_true : {np.array2string(p_true, precision=2, floatmode='fixed')}  \n" +
+                f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
     
     
 
@@ -341,14 +428,16 @@ if __name__ == "__main__":
     
     basic_array32_estimator_test()
     
-    basic_array_constant2221_estimator_test()
-    hard_array_constant2221_estimator_test()
+    # basic_array_constant2221_estimator_test()
+    # hard_array_constant2221_estimator_test()
     
     # translation_search_test( False )
-    translation_search_test( True )
+    # translation_search_test( True )
     
     # hard_test( method = 'sample' )
-    hard_test( method = 'x' )
+    # hard_test( method = 'x' )
     
-    very_hard_test()
+    # very_hard_test()
+    
+    # quad_test()
 

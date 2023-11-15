@@ -768,15 +768,15 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_array3_convergence_test()
+    # basic_array3_convergence_test()
     
-    basic_array32_convergence_test()
+    # basic_array32_convergence_test()
     
-    basic_array32_tracking_test()
+    # basic_array32_tracking_test()
     
-    hard_array32_tracking_test()
+    # hard_array32_tracking_test()
     
-    hard_array32_tracking_local_minima_analysis()
+    # hard_array32_tracking_local_minima_analysis()
     
     # basic_array2221_tracking_test()
     
@@ -788,6 +788,6 @@ if __name__ == "__main__":
     
     # array32_cost_shape_analysis()
     
-    speed_test( False )
+    # speed_test( False )
     
 

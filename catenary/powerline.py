@@ -547,6 +547,91 @@ class ArrayModelConstant2221( ArrayModel ):
         
         return grad
     
+    
+##############################################################################
+class Quad( ArrayModel ):
+    """
+    ArrayModel 32 is a model for 7 catenary with 6 offsets variables
+    
+    ----------------------------------------------------------
+                      
+     _          2                          3
+     ^                                 d1
+     |                       |------------>   
+     h1          
+     |
+     _         0                           1             
+       
+                                  d1
+                            |------------->          
+    
+    
+    ----------------------------------------------------------
+    
+    inputs
+    --------
+    p      : vector of parameters 
+    
+        x_0 : x translation of local frame orign in world frame
+        y_0 : y translation of local frame orign in world frame
+        z_0 : z translation of local frame orign in world frame
+        phi : z rotation of local frame basis in in world frame
+        a   : sag parameter
+        d1  : horizontal distance between power lines
+        h1  : vertical distance between power lines      
+    
+    
+    ----------------------------------------------------------
+        
+    """
+    
+    #################################################
+    def __init__(self):
+
+        ArrayModel.__init__( self, l = 7 , q = 4 )
+        
+        
+    ############################
+    def p2deltas( self, p ):
+        """ 
+        Compute the translation vector of each individual catenary model origin
+        with respect to the model origin in the model frame
+        """
+        
+        delta = np.zeros((3, self.q ))
+        
+        d1  = p[5]
+        h1  = p[6]
+        
+        # Offset in local catenary frame
+        delta[1,0] = -d1    # y offset of cable 0
+        delta[1,1] = +d1    # y offset of cable 1
+        delta[1,2] = -d1    # y offset of cable 2
+        delta[1,3] = +d1    # y offset of cable 3
+        
+        delta[2,2] = +h1    # z offset of cable 2
+        delta[2,3] = +h1    # z offset of cable 3
+        
+        return delta
+    
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+        
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+        
+        grad[:,:,0] = np.array([[ 0.,  0.,  0 ,  0. ],
+                                [-1., +1., -1., +1. ],
+                                [ 0.,  0.,  0.,  0. ]])
+        
+        grad[:,:,1] = np.array([[ 0.,  0.,  0 ,  0. ],
+                                [ 0.,  0.,  0.,  0. ],
+                                [ 0.,  0., +1., +1. ]])
+        
+        return grad
+    
 
 
 # ###########################
