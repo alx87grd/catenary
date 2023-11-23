@@ -200,7 +200,7 @@ def translation_search_test( search = True , n = 3 , var = 10 ):
 
 
 ############################
-def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
+def hard_test( search = True , method = 'x' , n = 2, var = 10 ,  n_steps = 50 ):
     
     model  = powerline.ArrayModel32()
     
@@ -213,7 +213,8 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
     
     pts = pts[:,:30] #remover one cable
     
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    plot  = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    plot2 = powerline.ErrorPlot( p , p_hat , n_steps )
     
     estimator = powerline.ArrayEstimator( model , p_hat )
     
@@ -225,7 +226,7 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
     estimator.method       = method
     
     
-    for i in range(50):
+    for i in range( n_steps ):
         
         pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
                                              x_min = -100, x_max = -70, n_out = 5 ,
@@ -247,12 +248,15 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ):
         target = estimator.is_target_aquired( p_hat , pts)
         
         plot.update_estimation( p_hat )
+        plot2.save_new_estimation( p_hat , solve_time )
         
         
         print(  " Solve time : " + str(solve_time) + '\n' + 
                 " Target acquired: " + str(target) + '\n' +
                 f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+    plot2.plot_error_single_run()
         
         
     return estimator
@@ -416,6 +420,48 @@ def quad_test( search = True , method = 'x' , n = 5, var = 10 ):
                 " Target acquired: " + str(target) + '\n' +
                 f" p_true : {np.array2string(p_true, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+        
+############################
+def global_convergence_test( n_steps = 200 ):
+    
+    xm = -200
+    xp = 200
+    
+    # xm = 10
+    # xp = 20
+    
+    
+    model  = powerline.ArrayModel32()
+
+    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
+    p_hat  =  np.array([ 100, 100, 100, 0.6, 300, 49.  , 29.  , 49    ])
+    
+    pts = model.generate_test_data( p , partial_obs = True )
+    
+    plot  = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    plot2 = powerline.ErrorPlot( p , p_hat , n_steps )
+    
+    estimator = powerline.ArrayEstimator( model , p_hat )
+    
+    estimator.Q = 10.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.01 , 0.00001 , 0.002 , 0.002 , 0.002])
+    
+
+    
+    for i in range(n_steps):
+        
+        pts = model.generate_test_data( p , partial_obs = True , x_min = xm, x_max = xp , n_out = 100 , w_o = 50.0 , center = [0,0,-200])
+        
+        plot.update_pts( pts )
+        
+        start_time = time.time()
+        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n = 3 , var = 50 )
+        solve_time = time.time() - start_time 
+        
+        plot.update_estimation( p_hat )
+        plot2.save_new_estimation( p_hat , solve_time )
+        
+    plot2.plot_error_single_run()
     
     
 
@@ -430,7 +476,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_array32_estimator_test( 500 )
+    # basic_array32_estimator_test( 500 )
     
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
@@ -439,9 +485,11 @@ if __name__ == "__main__":
     # translation_search_test( True )
     
     # hard_test( method = 'sample' )
-    # hard_test( method = 'x' )
+    # hard_test( method = 'x' , n_steps = 200 )
     
     # very_hard_test()
     
     # quad_test()
+    
+    global_convergence_test()
 

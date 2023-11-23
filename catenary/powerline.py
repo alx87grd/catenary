@@ -1346,8 +1346,15 @@ class EstimationPlot:
     ############################
     def update_pts( self, pts_noisy  ):
         
-        self.line_noisy[0].set_data( pts_noisy[0,:] , pts_noisy[1,:]  )
-        self.line_noisy[0].set_3d_properties( pts_noisy[2,:] )
+        try:
+        
+            self.line_noisy[0].set_data( pts_noisy[0,:] , pts_noisy[1,:]  )
+            self.line_noisy[0].set_3d_properties( pts_noisy[2,:] )
+            
+        except:
+            
+            line_noisy = self.ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , label= 'Measurements')
+            self.line_noisy = line_noisy
         
         plt.pause( 0.001 )
         
@@ -1469,6 +1476,76 @@ class ErrorPlot:
         ax.plot( frame[1:] , t , label= '$t$' )
         
         ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[sec]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+    
+    ############################
+    def plot_error_all_run( self , run = 0 , fs = 10 ):
+        
+        PE= self.PE
+        t = self.t
+        
+        frame = np.linspace( 0 , self.n_steps , self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(self.n_run):
+            ax.plot( frame , PE[0,:,j] , '--k')
+            ax.plot( frame , PE[1,:,j] , '--r')
+            ax.plot( frame , PE[2,:,j] , '--b')
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(self.n_run):
+            ax.plot( frame , PE[3,:,j] )
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$\psi$ [rad]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(self.n_run):
+            ax.plot( frame , PE[4,:,j] , '--b')
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        l_n = PE.shape[0] - 5
+        
+        for i in range(l_n):
+            for j in range(self.n_run):
+                ax.plot( frame , PE[ 5 + i,:,j] )
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(self.n_run):
+            ax.plot( frame[1:] , t[:,j] )
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
         ax.set_xlabel( 'steps', fontsize = fs)
         ax.set_ylabel( '[sec]', fontsize = fs)
         ax.grid(True)
