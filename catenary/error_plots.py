@@ -95,7 +95,7 @@ def error_plot_test():
     
     ax.plot( frame , p_e[4,:] , label= '$a$' )
     
-    ax.legend( loc = 'upper right' , fontsize = 5)
+    # ax.legend( loc = 'upper right' , fontsize = 5)
     ax.set_xlabel( 'steps', fontsize = 5)
     ax.grid(True)
     
@@ -105,7 +105,7 @@ def error_plot_test():
     ax.plot( frame , p_e[6,:] , label= '$d_2$' )
     ax.plot( frame , p_e[7,:] , label= '$h_1$' )
     
-    ax.legend( loc = 'upper right' , fontsize = 5)
+    # ax.legend( loc = 'upper right' , fontsize = 5)
     ax.set_xlabel( 'steps', fontsize = 5)
     ax.grid(True)
         

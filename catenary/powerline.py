@@ -1369,6 +1369,110 @@ class EstimationPlot:
         self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'o' , label= 'Group')
         
         
+###############################################################################
+class ErrorPlot:
+    """ 
+    """
+    
+    ############################
+    def __init__(self, p_true , p_hat , n_steps , n_run  = 1 ):
+        
+        self.n_p     = p_true.shape[0]
+        self.n_steps = n_steps
+        self.n_run   = n_run
+        
+        self.p_true = p_true
+        
+        self.PE = np.zeros(  (self.n_p , n_steps + 1, n_run ) )
+        
+        self.t  = np.zeros(  ( n_steps , n_run ) )
+        
+        self.step = 0
+        self.run  = 0
+        
+        self.PE[:,self.step,self.run] = p_true - p_hat
+    
+    ############################
+    def init_new_run(self, p_hat ):
+        
+        self.step = 0
+        self.run  = self.run + 1
+        
+        self.PE[:,self.step,self.run] = self.p_true - p_hat
+        
+    
+    ############################
+    def save_new_estimation( self, p_hat , t_solve ):
+        
+        self.t[self.step,self.run]    = t_solve
+        
+        self.step = self.step + 1
+        
+        self.PE[:,self.step,self.run] = self.p_true - p_hat
+        
+    ############################
+    def plot_error_single_run( self , run = 0 , fs = 10 ):
+        
+        p_e = self.PE[:,:,run]
+        t   = self.t[:,run]
+        
+        frame = np.linspace( 0 , self.n_steps , self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        ax.plot( frame , p_e[0,:] , label= '$x_o$' )
+        ax.plot( frame , p_e[1,:] , label= '$y_o$' )
+        ax.plot( frame , p_e[2,:] , label= '$z_o$' )
+        
+        ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        ax.plot( frame , p_e[3,:] , label= '$\psi$' )
+        
+        ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[rad]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        ax.plot( frame , p_e[4,:] , label= '$a$' )
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        l_n = p_e.shape[0] - 5
+        
+        for i in range(l_n):
+            ax.plot( frame , p_e[ 5 + i,:] )
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        ax.plot( frame[1:] , t , label= '$t$' )
+        
+        ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '[sec]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
 
 
 '''

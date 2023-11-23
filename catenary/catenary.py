@@ -564,21 +564,26 @@ def plot_lorentzian( l = 10 , power = 2 , b = 1.0 , ax = None ):
     y = lorentzian( x , l , power )
 
     ax[0].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b) )
-    ax[0].set_xlabel( 'x', fontsize = 5)
+    ax[0].set_xlabel( '$d_i$', fontsize = 8 )
     ax[0].grid(True)
-    ax[0].legend()
-    ax[0].tick_params( labelsize = 5 )
-    ax[0].set_ylabel( 'lorentzian(x)', fontsize = 5 )
+    # ax[0].legend()
+    ax[0].tick_params( labelsize = 8 )
+    ax[0].set_ylabel( '$c_i$', fontsize = 8 )
     
     x = np.linspace( -1.0 , 1.0 , 1000 ) 
     y = lorentzian( x , l , power )
     
     ax[1].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b))
-    ax[1].set_xlabel( 'x', fontsize = 5)
+    ax[1].set_xlabel( '$d_i$', fontsize = 8 )
     ax[1].grid(True)
-    ax[1].legend()
-    ax[1].tick_params( labelsize = 5 )
-    ax[1].set_ylabel( 'lorentzian(x)', fontsize = 5 )
+    # ax[1].legend()
+    ax[1].tick_params( labelsize = 8 )
+    ax[1].set_ylabel( '$c_i$', fontsize = 8 )
+    
+    try:
+        fig.tight_layout()
+    except:
+        pass
     
     return ax
 
@@ -668,7 +673,9 @@ if __name__ == "__main__":
     
     ax = plot_lorentzian( l = 1.0, power = 2, b = 1.0 )
     
-    plot_lorentzian( l = 1.0 , power = 4, b = 0.5 , ax = ax )
+    # plot_lorentzian( l = 1.0 , power = 4, b = 0.5 , ax = ax )
+    # plot_lorentzian( l = 5.0 , power = 2, b = 1.0 , ax = ax )
+    # plot_lorentzian( l = 0.01 , power = 2, b = 1.0 , ax = ax )
 
     
 

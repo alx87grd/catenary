@@ -18,7 +18,7 @@ import powerline
 
 
 ############################
-def basic_array32_estimator_test():
+def basic_array32_estimator_test( n_steps = 100 ):
     
     
     model  = powerline.ArrayModel32()
@@ -28,13 +28,14 @@ def basic_array32_estimator_test():
     
     pts = model.generate_test_data( p , partial_obs = True )
     
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    plot  = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
+    plot2 = powerline.ErrorPlot( p , p_hat , n_steps )
     
     estimator = powerline.ArrayEstimator( model , p_hat )
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
-    for i in range(300):
+    for i in range( n_steps ):
         
         pts = model.generate_test_data( p , partial_obs = True )
         
@@ -47,12 +48,15 @@ def basic_array32_estimator_test():
         target = estimator.is_target_aquired( p_hat , pts)
         
         plot.update_estimation( p_hat )
+        plot2.save_new_estimation( p_hat , solve_time )
         
         
         print( " Solve time : " + str(solve_time) + '\n' + 
                " Target acquired: " + str(target) + '\n' +
                 f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
+        
+    plot2.plot_error_single_run()
         
         
     return estimator
@@ -426,7 +430,7 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    basic_array32_estimator_test()
+    basic_array32_estimator_test( 500 )
     
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
