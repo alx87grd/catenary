@@ -1111,40 +1111,7 @@ class ArrayEstimator:
         # grouping param
         self.d_th         = 1.0
         self.succes_ratio = 0.8
-        
-        
-    #####################################################
-    def compute_average_dmin( self, p , pts ):
-        
-        # number of measurements
-        m      = pts.shape[1]
-        
-        # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p,  self.x_min , self.x_max , self.n_sample  )[0]
-        
-        # Minimum distances to model for all measurements
-        d_min = catenary.compute_d_min( pts , r_model )
-        
-        # Average
-        d_min_average = d_min.sum() / m 
-        
-        return d_min_average
 
-            
-    #####################################################
-    def get_array_group( self, p , pts ):
-        
-        # generate a list of sample point on the model curve
-        r_model  = self.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
-        
-        # Minimum distances to model for all measurements
-        d_min = catenary.compute_d_min( pts , r_model )
-        
-        # Group based on threshlod
-        pts_in = pts[ : , d_min < self.d_th ]
-        
-        return pts_in
-    
     
     #####################################################
     def get_bounds( self):
@@ -1180,12 +1147,16 @@ class ArrayEstimator:
     
     
     #####################################################
-    def solve( self, pts , p_init , callback = None ):
+    def solve( self, pts , p_init , use_grad = True , callback = None ):
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
         func   = lambda p: J(p, pts, p_init, param)
-        grad   = lambda p: dJ_dp( p, pts, p_init, param , num = False )
+        
+        if use_grad:
+            grad = lambda p: dJ_dp( p, pts, p_init, param , num = False )
+        else:
+            grad = None
         
         res = minimize( func,
                         p_init, 
@@ -1203,12 +1174,17 @@ class ArrayEstimator:
     
     
     #####################################################
-    def solve_with_translation_search( self, pts , p_init , n = 10 , var = 10 , callback = None ):
+    def solve_with_translation_search( self, pts , p_init , n = 10 , var = 10 , 
+                                       use_grad = True, callback = None ):
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
         func   = lambda p: J(p, pts, p_init, param)
-        grad   = lambda p: dJ_dp( p, pts, p_init, param , num = False )
+        
+        if use_grad:
+            grad = lambda p: dJ_dp( p, pts, p_init, param , num = False )
+        else:
+            grad = None
         
         # variation to params
         rng    = np.random.default_rng( seed = None )
@@ -1245,16 +1221,25 @@ class ArrayEstimator:
     
     
     #####################################################
-    def is_target_aquired( self, p , pts ):
+    def get_array_group( self, p , pts , xm = -200, xp = +200, n_s = 5000):
         
         # generate a list of sample point on the model curve
-        r_model  = self.model.p2r_w( p , self.x_min , self.x_max , self.n_sample )[0]
+        r_model  = self.model.p2r_w( p , xm , xp , n_s )[0]
         
         # Minimum distances to model for all measurements
         d_min = catenary.compute_d_min( pts , r_model )
         
         # Group based on threshlod
         pts_in = pts[ : , d_min < self.d_th ]
+        
+        return pts_in
+    
+    
+    #####################################################
+    def is_target_aquired( self, p , pts ):
+        
+        # Group based on threshlod
+        pts_in = self.get_array_group( p , pts )
         
         # Ratio of point in range of the model
         ratio = pts_in.shape[1] / pts.shape[1]
@@ -1286,10 +1271,19 @@ class EstimationPlot:
         pts_hat   = p2r_w( p_hat  , xmin , xmax , n )[1]
         pts_noisy = pts
         
+        self.fig    = fig
+        self.ax     = ax
+        self.n      = n
+        self.xmin   = xmin
+        self.xmax   = xmax
+        self.p2r_w  = p2r_w
+        self.n_line = pts_true.shape[2]
+        
+        # Plot init position (saved)
+        self.plot_model( p_hat )
+        
         lines_true  = []
         lines_hat   = []
-        
-        self.n_line = pts_true.shape[2]
         
         # Plot true line position
         for i in range(self.n_line):
@@ -1298,7 +1292,7 @@ class EstimationPlot:
         
         # Plot measurements
         if pts is not None:
-            line_noisy = ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , label= 'Measurements')
+            line_noisy = ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'xb' , label= 'Measurements')
             self.line_noisy = line_noisy
         
         # Plot estimation
@@ -1306,8 +1300,6 @@ class EstimationPlot:
             # lines_true.append( ax.plot( pts_true[0,:,i]  , pts_true[1,:,i]  , pts_true[2,:,i] , '-k' ) ) #, label= 'True line %d ' %i ) )
             lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--', label= 'Estimated line %d' %i) )
         
-        
-            
         self.lines_true  = lines_true
         self.lines_hat   = lines_hat
         
@@ -1315,19 +1307,6 @@ class EstimationPlot:
         ax.legend( loc = 'upper right' , fontsize = 5)
         ax.set_xlabel( 'x', fontsize = 5)
         ax.grid(True)
-        
-        
-        self.fig = fig
-        self.ax  = ax
-        
-        self.n    = n
-        self.xmin = xmin
-        self.xmax = xmax
-        
-        self.p2r_w = p2r_w
-        
-        # Plot init position (saved)
-        self.plot_model( p_hat )
         
         
     ############################
@@ -1380,9 +1359,19 @@ class EstimationPlot:
         
     
     ############################
-    def add_pts( self, pts ):
+    def add_pts( self, pts , label = '$n_{in}$ group' ):
         
-        self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'o' , label= 'Group')
+        self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'xr' , label = label)
+        
+        plt.pause( 0.001 )
+        
+    ############################
+    def save( self, name = 'test' ):
+        
+        self.fig.savefig( name + '_3d_estimation.pdf')
+        
+        
+        
         
         
 ###############################################################################
@@ -1401,7 +1390,8 @@ class ErrorPlot:
         
         self.PE = np.zeros(  (self.n_p , n_steps + 1, n_run ) )
         
-        self.t  = np.zeros(  ( n_steps , n_run ) )
+        self.t     = np.zeros(  ( n_steps , n_run ) )
+        self.n_in  = np.zeros(  ( n_steps , n_run ) )
         
         self.step = 0
         self.run  = 0
@@ -1420,9 +1410,10 @@ class ErrorPlot:
         
     
     ############################
-    def save_new_estimation( self, p_hat , t_solve ):
+    def save_new_estimation( self, p_hat , t_solve , n_in = 0 ):
         
         self.t[self.step,self.run]    = t_solve
+        self.n_in[self.step,self.run] = n_in
         
         self.step = self.step + 1
         
@@ -1515,8 +1506,8 @@ class ErrorPlot:
         fig.tight_layout()
         if save:
             fig.savefig( name + '_translation_error.pdf')
-            fig.savefig( name + '_translation_error.png')
-            fig.savefig( name + '_translation_error.jpg')
+            # fig.savefig( name + '_translation_error.png')
+            # fig.savefig( name + '_translation_error.jpg')
         
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
@@ -1531,8 +1522,8 @@ class ErrorPlot:
         fig.tight_layout()
         if save:
             fig.savefig( name + '_orientation_error.pdf')
-            fig.savefig( name + '_orientation_error.png')
-            fig.savefig( name + '_orientation_error.jpg')
+            # fig.savefig( name + '_orientation_error.png')
+            # fig.savefig( name + '_orientation_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1546,8 +1537,8 @@ class ErrorPlot:
         fig.tight_layout()
         if save:
             fig.savefig( name + '_sag_error.pdf')
-            fig.savefig( name + '_sag_error.png')
-            fig.savefig( name + '_sag_error.jpg')
+            # fig.savefig( name + '_sag_error.png')
+            # fig.savefig( name + '_sag_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1564,8 +1555,8 @@ class ErrorPlot:
         fig.tight_layout()
         if save:
             fig.savefig( name + '_internaloffsets_error.pdf')
-            fig.savefig( name + '_internaloffsets_error.png')
-            fig.savefig( name + '_internaloffsets_error.jpg')
+            # fig.savefig( name + '_internaloffsets_error.png')
+            # fig.savefig( name + '_internaloffsets_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1579,8 +1570,25 @@ class ErrorPlot:
         fig.tight_layout()
         if save:
             fig.savefig( name + '_solver_time.pdf')
-            fig.savefig( name + '_solver_time.png')
-            fig.savefig( name + '_solver_time.jpg')
+            # fig.savefig( name + '_solver_time.png')
+            # fig.savefig( name + '_solver_time.jpg')
+            
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(self.n_run):
+            ax.plot( frame[1:] , self.n_in[:,j] )
+            
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$n_{in}[\%]$', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig( name + '_nin.pdf')
+            # fig.savefig( name + '_nin.png')
+            # fig.savefig( name + '_nin.jpg')
+            
+        
 
 
 '''

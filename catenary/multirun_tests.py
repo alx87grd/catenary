@@ -47,7 +47,8 @@ def ArrayModelEstimatorTest(   save    = True,
                                method   = 'x',
                                n_s      = 100,
                                x_min_s  = -200,
-                               x_max_s  = +200):
+                               x_max_s  = +200,
+                               use_grad = True):
     
     
     
@@ -64,11 +65,15 @@ def ArrayModelEstimatorTest(   save    = True,
     estimator.x_min     = x_min_s
     estimator.x_max     = x_max_s
     estimator.n_sample  = n_s
+    estimator.d_th      = w_l * 5.0
     
     
     for j in range(n_run):
         
         print('Run no' , j)
+        
+        # Alway plot the 3d graph for the last run
+        if j == (n_run-1): plot = True
         
         # Random true line position
         p_true  = np.random.uniform( p_lb , p_ub )
@@ -100,16 +105,29 @@ def ArrayModelEstimatorTest(   save    = True,
             p_hat      = estimator.solve_with_translation_search( pts, 
                                                                   p_hat, 
                                                                   n_sea, 
-                                                                  var  )
+                                                                  var,
+                                                                  use_grad)
             ##################################################################
             solve_time = time.time() - start_time 
             
             if plot: plot_3d.update_estimation( p_hat )
             
-            e_plot.save_new_estimation( p_hat , solve_time )
+            ##################################################################
+            n_tot  = pts.shape[1] - n_out
+            pts_in = estimator.get_array_group( p_hat , pts )
+            n_in   = pts_in.shape[1] /  n_tot * 100
+            ##################################################################
             
+            # print(pts.shape,pts_in.shape)
             
-    e_plot.plot_error_all_run()
+            e_plot.save_new_estimation( p_hat , solve_time , n_in )
+        
+        # Plot pts_in
+        if plot : plot_3d.add_pts( pts_in )
+            
+    # Finalize figures
+    if save: plot_3d.save( name = name )
+    e_plot.plot_error_all_run( save = save , name = name )
     
 
 ###############################################################################
@@ -118,7 +136,7 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
     # Baseline:
     save    = save
     plot    = plot
-    name    = 'GlobalConvergenceBeta'
+    name    = 'GlobalConvergence'
     n_run   = n_run
     n_steps = 200
     model   = powerline.ArrayModel32()
@@ -145,6 +163,7 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
     n_s      = 100
     x_min_s  = -200
     x_max_s  = +200
+    use_grad = True
 
     
     ArrayModelEstimatorTest(save,
@@ -173,7 +192,8 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
                             method,
                             n_s,
                             x_min_s,
-                            x_max_s)
+                            x_max_s,
+                            use_grad)
     
     
 ###############################################################################
@@ -182,7 +202,7 @@ def PartialObsTest( n_run = 5 , plot = False , save = True ):
     # Baseline:
     save    = save
     plot    = plot
-    name    = 'PartialObsBeta'
+    name    = 'PartialObs'
     n_run   = n_run
     n_steps = 200
     model   = powerline.ArrayModel32()
@@ -209,6 +229,7 @@ def PartialObsTest( n_run = 5 , plot = False , save = True ):
     n_s      = 100
     x_min_s  = -200
     x_max_s  = +200
+    use_grad = True
 
     
     ArrayModelEstimatorTest(save,
@@ -237,10 +258,8 @@ def PartialObsTest( n_run = 5 , plot = False , save = True ):
                             method,
                             n_s,
                             x_min_s,
-                            x_max_s)
-    
-    
-    
+                            x_max_s,
+                            use_grad)
     
     
     
@@ -258,6 +277,8 @@ if __name__ == "__main__":
     
     # ArrayModelEstimatorTest()
     
-    # GlobalConvergenceTest( 50 )
+    # GlobalConvergenceTest( 2 , True , False )
+    # PartialObsTest( 2 , True , False )
     
-    PartialObsTest( 5 , True , False )
+    GlobalConvergenceTest( 2 , False , True )
+    PartialObsTest( 2 , False , True )
