@@ -9,7 +9,7 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
-import catenary
+from catenary import singleline as catenary
 
 
 ###########################

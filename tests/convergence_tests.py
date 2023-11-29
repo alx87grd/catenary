@@ -12,8 +12,8 @@ from scipy.optimize import minimize
 import time
 
 
-import catenary
-import powerline
+from catenary import singleline as catenary
+from catenary import powerline
 
 
 def basic_array3_convergence_test():
@@ -256,55 +256,6 @@ def hard_array32_tracking_test():
                 f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
 
-############################
-def hard_array32_tracking_local_minima_analysis( model =  powerline.ArrayModel32() ):
-    
-    p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 25.  , 50. ])
-    p_hat  =  np.array([ 3.56, 26.8, 25.82, 1.05, 499.95, 44.12, 25.00, 28.1 ])
-    
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -70, n_out = 10 ,
-                                         center = [-50,-50,-50] , w_o = 10 )
-    
-    
-    R      = np.ones(pts.shape[1]) / pts.shape[1]
-    Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    l      = 1.0
-    power  = 2.0
-    b      = 1.0
-    method = 'x'
-    n      = 501
-    x_min  = -200
-    x_max  = +200
-    
-    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    
-    n = 200
-    zs = np.linspace( -100 , 100, n )
-    cs = np.zeros(n)
-    
-    
-    for i in range(n):
-        
-        p_hat[2] = p[2] + zs[i]
-        
-        cs[i]    = powerline.J( p_hat, pts, p_hat, params)
-    
-        plot.update_estimation( p_hat )
-        
-    
-    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
-    
-    ax = [ax]
-    ax[0].plot( zs , cs  )
-    ax[0].set_xlabel( 'z_hat', fontsize = 5)
-    ax[0].set_ylabel( 'J(p)', fontsize = 5)
-    ax[0].grid(True)
-    ax[0].legend()
-    ax[0].tick_params( labelsize = 5 )
     
     
 ############################
@@ -497,111 +448,14 @@ def hard_arrayconstant2221_tracking_test():
                 f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
         
-############################
-def arrayconstant2221_cost_shape_analysis():
-    
-    model = powerline.ArrayModelConstant2221()
-    
-    p_hat =  np.array([  0,  0, 0, 0.0,  500, 5.  , 5  , 10  ])
-    p     =  np.array([  0,  0, 0, 0.0,  500, 5.  , 5. , 10 ])
-    
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 10 ,
-                                         center = [0,0,0] , w_o = 20 )
-    
-    R      = np.ones(pts.shape[1]) / pts.shape[1]
-    Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
-    l      = 1.0
-    power  = 2.0
-    b      = 1.0
-    method = 'x'
-    n      = 501
-    x_min  = -200
-    x_max  = +200
-    
-    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    
-    n = 100
-    zs = np.linspace( -25 , 25, n )
-    cs = np.zeros(n)
-    
-    
-    for i in range(n):
-        
-        p_hat[2] = zs[i]
-        
-        cs[i]    = powerline.J( p_hat, pts, p_hat, params)
-    
-        plot.update_estimation( p_hat )
-        
-    
-    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
-    
-    ax = [ax]
-    ax[0].plot( zs , cs  )
-    ax[0].set_xlabel( 'z_hat', fontsize = 5)
-    ax[0].set_ylabel( 'J(p)', fontsize = 5)
-    ax[0].grid(True)
-    ax[0].legend()
-    ax[0].tick_params( labelsize = 5 )
+
         
 
 
 
 
 
-############################
-def array32_cost_shape_analysis( model =  powerline.ArrayModel32() ):
-    
-    p_hat =  np.array([  0,  0, 0, 0.0,  500, 5.  , 3  , 5  ])
-    p     =  np.array([  0,  0, 0, 0.0,  500, 5.  , 3. , 5 ])
-    
-    pts = model.generate_test_data( p , partial_obs = True , n_obs = 16 , 
-                                         x_min = -100, x_max = -50, n_out = 10 ,
-                                         center = [0,0,0] , w_o = 20 )
-    
-    R      = np.ones(pts.shape[1]) / pts.shape[1]
-    Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
-    l      = 1.0
-    power  = 2.0
-    b      = 1.0
-    method = 'x'
-    n      = 25
-    x_min  = -20
-    x_max  = +20
-    
-    params = [ model , R , Q , l , power , b , method , n , x_min , x_max ]
-    
-    plot = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
-    
-    
-    n = 100
-    zs = np.linspace( -25 , 25, n )
-    cs = np.zeros(n)
-    
-    
-    for i in range(n):
-        
-        p_hat[2] = zs[i]
-        
-        cs[i]    = powerline.J( p_hat, pts, p_hat, params)
-    
-        plot.update_estimation( p_hat )
-        
-    
-    fig, ax = plt.subplots(1, figsize= (4, 3), dpi=300, frameon=True)
-    
-    ax = [ax]
-    ax[0].plot( zs , cs  )
-    ax[0].set_xlabel( 'z_hat', fontsize = 5)
-    ax[0].set_ylabel( 'J(p)', fontsize = 5)
-    ax[0].grid(True)
-    ax[0].legend()
-    ax[0].tick_params( labelsize = 5 )
-    
+
     
     
     
@@ -776,18 +630,13 @@ if __name__ == "__main__":
     
     # hard_array32_tracking_test()
     
-    # hard_array32_tracking_local_minima_analysis()
     
     # basic_array2221_tracking_test()
     
     # hard_array2221_tracking_test()
     
     # hard_arrayconstant2221_tracking_test()
-    
-    # arrayconstant2221_cost_shape_analysis()
-    
-    # array32_cost_shape_analysis()
-    
-    # speed_test( False )
+
+    speed_test( False )
     
 

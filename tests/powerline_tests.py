@@ -12,8 +12,8 @@ from scipy.optimize import minimize
 import time
 
 
-import catenary
-import powerline
+from catenary import singleline as catenary
+from catenary import powerline
 
 
 def J1_vs_J2():

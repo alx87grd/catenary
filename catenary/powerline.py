@@ -15,7 +15,7 @@ from scipy.optimize import minimize
 # catenary function
 ###########################
 
-import catenary
+from catenary import singleline as catenary
 
 
 ###########################
@@ -1419,70 +1419,6 @@ class ErrorPlot:
         
         self.PE[:,self.step,self.run] = self.p_true - p_hat
         
-    ############################
-    def plot_error_single_run( self , run = 0 , fs = 10 ):
-        
-        p_e = self.PE[:,:,run]
-        t   = self.t[:,run]
-        
-        frame = np.linspace( 0 , self.n_steps , self.n_steps + 1)
-
-        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
-        
-        ax.plot( frame , p_e[0,:] , label= '$x_o$' )
-        ax.plot( frame , p_e[1,:] , label= '$y_o$' )
-        ax.plot( frame , p_e[2,:] , label= '$z_o$' )
-        
-        ax.legend( loc = 'upper right' , fontsize = fs)
-        ax.set_xlabel( 'steps', fontsize = fs)
-        ax.set_ylabel( '[m]', fontsize = fs)
-        ax.grid(True)
-        fig.tight_layout()
-        
-        
-        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
-        
-        ax.plot( frame , p_e[3,:] , label= '$\psi$' )
-        
-        ax.legend( loc = 'upper right' , fontsize = fs)
-        ax.set_xlabel( 'steps', fontsize = fs)
-        ax.set_ylabel( '[rad]', fontsize = fs)
-        ax.grid(True)
-        fig.tight_layout()
-        
-        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
-        
-        ax.plot( frame , p_e[4,:] , label= '$a$' )
-        
-        # ax.legend( loc = 'upper right' , fontsize = fs)
-        ax.set_xlabel( 'steps', fontsize = fs)
-        ax.set_ylabel( '[m]', fontsize = fs)
-        ax.grid(True)
-        fig.tight_layout()
-        
-        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
-        
-        l_n = p_e.shape[0] - 5
-        
-        for i in range(l_n):
-            ax.plot( frame , p_e[ 5 + i,:] )
-        
-        # ax.legend( loc = 'upper right' , fontsize = fs)
-        ax.set_xlabel( 'steps', fontsize = fs)
-        ax.set_ylabel( '[m]', fontsize = fs)
-        ax.grid(True)
-        fig.tight_layout()
-        
-        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
-        
-        ax.plot( frame[1:] , t , label= '$t$' )
-        
-        ax.legend( loc = 'upper right' , fontsize = fs)
-        ax.set_xlabel( 'steps', fontsize = fs)
-        ax.set_ylabel( '[sec]', fontsize = fs)
-        ax.grid(True)
-        fig.tight_layout()
-        
     
     ############################
     def plot_error_all_run( self , fs = 10 , save = False, name = 'test' ):
@@ -1590,6 +1526,117 @@ class ErrorPlot:
             
         
 
+###############################################################################
+def ArrayModelEstimatorTest(   save    = True,
+                               plot    = True,
+                               name    = 'test' , 
+                               n_run   = 5,
+                               n_steps = 10,
+                               # Model
+                               model   = ArrayModel32(),
+                               p_hat   = np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ]),
+                               p_ub    = np.array([ 150, 150, 150, 2.0, 900, 51.  , 31.  , 51. ]),
+                               p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ]),
+                               # Fake data Distribution param
+                               n_obs = 20, 
+                               n_out = 10,
+                               x_min = -200, 
+                               x_max = 200, 
+                               w_l   = 0.5,  
+                               w_o   = 100,
+                               center = [0,0,0] , 
+                               partial_obs = False,
+                               # Solver param
+                               n_sea    = 2, 
+                               var      = 10 ,
+                               Q        = 0.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]),
+                               l        = 1.0,
+                               power    = 2.0,
+                               b        = 1.0,
+                               method   = 'x',
+                               n_s      = 100,
+                               x_min_s  = -200,
+                               x_max_s  = +200,
+                               use_grad = True):
+    
+    
+    
+    estimator = ArrayEstimator( model , p_hat )
+    
+    estimator.Q         = Q
+    estimator.p_lb      = p_lb
+    estimator.p_ub      = p_ub
+    estimator.method    = method
+    estimator.Q         = Q
+    estimator.b         = b
+    estimator.l         = l
+    estimator.power     = power
+    estimator.x_min     = x_min_s
+    estimator.x_max     = x_max_s
+    estimator.n_sample  = n_s
+    estimator.d_th      = w_l * 5.0
+    
+    
+    for j in range(n_run):
+        
+        print('Run no' , j)
+        
+        # Alway plot the 3d graph for the last run
+        if j == (n_run-1): plot = True
+        
+        # Random true line position
+        p_true  = np.random.uniform( p_lb , p_ub )
+        
+        if plot: plot_3d = EstimationPlot( p_true , p_hat , None, model.p2r_w )
+        
+        if j == 0: e_plot = ErrorPlot( p_true , p_hat , n_steps , n_run )
+        else:      e_plot.init_new_run( p_true , p_hat )
+        
+    
+        for i in range(n_steps):
+            
+            # Generate fake noisy data
+            pts = model.generate_test_data( p_true, 
+                                            n_obs, 
+                                            x_min, 
+                                            x_max,
+                                            w_l, 
+                                            n_out, 
+                                            center, 
+                                            w_o, 
+                                            partial_obs
+                                            )
+            
+            if plot: plot_3d.update_pts( pts )
+            
+            start_time = time.time()
+            ##################################################################
+            p_hat      = estimator.solve_with_translation_search( pts, 
+                                                                  p_hat, 
+                                                                  n_sea, 
+                                                                  var,
+                                                                  use_grad)
+            ##################################################################
+            solve_time = time.time() - start_time 
+            
+            if plot: plot_3d.update_estimation( p_hat )
+            
+            ##################################################################
+            n_tot  = pts.shape[1] - n_out
+            pts_in = estimator.get_array_group( p_hat , pts )
+            n_in   = pts_in.shape[1] /  n_tot * 100
+            ##################################################################
+            
+            # print(pts.shape,pts_in.shape)
+            
+            e_plot.save_new_estimation( p_hat , solve_time , n_in )
+        
+        # Plot pts_in
+        if plot : plot_3d.add_pts( pts_in )
+            
+    # Finalize figures
+    if save: plot_3d.save( name = name )
+    e_plot.plot_error_all_run( save = save , name = name )
 
 '''
 #################################################################

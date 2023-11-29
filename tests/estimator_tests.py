@@ -12,8 +12,8 @@ from scipy.optimize import minimize
 import time
 
 
-import catenary
-import powerline
+from catenary import singleline as catenary
+from catenary import powerline
 
 
 ###########################
@@ -433,10 +433,6 @@ def global_convergence_test( n_steps = 200 ):
     xm = -200
     xp = 200
     
-    # xm = 10
-    # xp = 20
-    
-    
     model  = powerline.ArrayModel32()
 
     p      =  np.array([  50,  50,  50, 1.0, 600, 50.  , 30.  , 50. ])
@@ -486,8 +482,8 @@ if __name__ == "__main__":
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
     
-    # translation_search_test( False )
-    # translation_search_test( True )
+    translation_search_test( False )
+    translation_search_test( True )
     
     # hard_test( method = 'sample' )
     # hard_test( method = 'x' , n_steps = 200 )
