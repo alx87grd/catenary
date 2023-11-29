@@ -16,6 +16,10 @@ import catenary
 import powerline
 
 
+###########################
+# Powerline Model
+###########################
+
 
 ############################
 def basic_array32_estimator_test( n_steps = 100 ):
@@ -215,11 +219,12 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ,  n_steps = 50 ):
     
     plot  = powerline.EstimationPlot( p , p_hat , pts , model.p2r_w )
     plot2 = powerline.ErrorPlot( p , p_hat , n_steps )
+    plot.plot_model( p_hat )
     
     estimator = powerline.ArrayEstimator( model , p_hat )
     
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 0 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
     estimator.d_th         = 3.0
     estimator.succes_ratio = 0.7
@@ -446,7 +451,7 @@ def global_convergence_test( n_steps = 200 ):
     
     estimator.Q = 10.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.01 , 0.00001 , 0.002 , 0.002 , 0.002])
     
-
+    plot.plot_model( p_hat )
     
     for i in range(n_steps):
         

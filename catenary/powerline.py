@@ -1161,16 +1161,6 @@ class ArrayEstimator:
     #####################################################
     def get_cost_parameters(self, m ):
         
-        # For J1
-        # param = [self.method,
-        #          self.Q,
-        #          self.b,
-        #          self.l,
-        #          self.power,
-        #          self.n_sample,
-        #          self.x_min,
-        #          self.x_max,
-        #          self.p2r_w   ]
         
         R      = np.ones( ( m ) ) * 1 / m 
         
@@ -1301,17 +1291,21 @@ class EstimationPlot:
         
         self.n_line = pts_true.shape[2]
         
+        # Plot true line position
         for i in range(self.n_line):
             lines_true.append( ax.plot( pts_true[0,:,i]  , pts_true[1,:,i]  , pts_true[2,:,i] , '-k' ) ) #, label= 'True line %d ' %i ) )
             # lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--', label= 'Estimated line %d' %i) )
         
+        # Plot measurements
         if pts is not None:
             line_noisy = ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , label= 'Measurements')
             self.line_noisy = line_noisy
         
+        # Plot estimation
         for i in range(self.n_line):
             # lines_true.append( ax.plot( pts_true[0,:,i]  , pts_true[1,:,i]  , pts_true[2,:,i] , '-k' ) ) #, label= 'True line %d ' %i ) )
             lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--', label= 'Estimated line %d' %i) )
+        
         
             
         self.lines_true  = lines_true
@@ -1322,6 +1316,7 @@ class EstimationPlot:
         ax.set_xlabel( 'x', fontsize = 5)
         ax.grid(True)
         
+        
         self.fig = fig
         self.ax  = ax
         
@@ -1330,6 +1325,20 @@ class EstimationPlot:
         self.xmax = xmax
         
         self.p2r_w = p2r_w
+        
+        # Plot init position (saved)
+        self.plot_model( p_hat )
+        
+        
+    ############################
+    def plot_model( self, p_hat , style = '-.c' ):
+        
+        pts_hat   = self.p2r_w( p_hat , self.xmin , self.xmax , self.n )[1]
+        
+        self.lines_model = []
+        
+        for i in range(self.n_line):
+            self.lines_model.append( self.ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , style ) )
         
         
     ############################
@@ -1400,7 +1409,9 @@ class ErrorPlot:
         self.PE[:,self.step,self.run] = p_true - p_hat
     
     ############################
-    def init_new_run(self, p_hat ):
+    def init_new_run(self, p_true , p_hat ):
+        
+        self.p_true = p_true
         
         self.step = 0
         self.run  = self.run + 1
@@ -1483,7 +1494,7 @@ class ErrorPlot:
         
     
     ############################
-    def plot_error_all_run( self , run = 0 , fs = 10 ):
+    def plot_error_all_run( self , fs = 10 , save = False, name = 'test' ):
         
         PE= self.PE
         t = self.t
@@ -1502,6 +1513,10 @@ class ErrorPlot:
         ax.set_ylabel( '[m]', fontsize = fs)
         ax.grid(True)
         fig.tight_layout()
+        if save:
+            fig.savefig( name + '_translation_error.pdf')
+            fig.savefig( name + '_translation_error.png')
+            fig.savefig( name + '_translation_error.jpg')
         
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
@@ -1514,6 +1529,10 @@ class ErrorPlot:
         ax.set_ylabel( '$\psi$ [rad]', fontsize = fs)
         ax.grid(True)
         fig.tight_layout()
+        if save:
+            fig.savefig( name + '_orientation_error.pdf')
+            fig.savefig( name + '_orientation_error.png')
+            fig.savefig( name + '_orientation_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1525,6 +1544,10 @@ class ErrorPlot:
         ax.set_ylabel( '[m]', fontsize = fs)
         ax.grid(True)
         fig.tight_layout()
+        if save:
+            fig.savefig( name + '_sag_error.pdf')
+            fig.savefig( name + '_sag_error.png')
+            fig.savefig( name + '_sag_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1539,6 +1562,10 @@ class ErrorPlot:
         ax.set_ylabel( '[m]', fontsize = fs)
         ax.grid(True)
         fig.tight_layout()
+        if save:
+            fig.savefig( name + '_internaloffsets_error.pdf')
+            fig.savefig( name + '_internaloffsets_error.png')
+            fig.savefig( name + '_internaloffsets_error.jpg')
         
         fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
         
@@ -1550,6 +1577,10 @@ class ErrorPlot:
         ax.set_ylabel( '[sec]', fontsize = fs)
         ax.grid(True)
         fig.tight_layout()
+        if save:
+            fig.savefig( name + '_solver_time.pdf')
+            fig.savefig( name + '_solver_time.png')
+            fig.savefig( name + '_solver_time.jpg')
 
 
 '''
