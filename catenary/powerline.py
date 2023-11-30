@@ -1286,38 +1286,42 @@ class EstimationPlot:
         lines_hat   = []
         
         # Plot true line position
-        for i in range(self.n_line):
+        lines_true.append( ax.plot( pts_true[0,:,0]  , pts_true[1,:,0]  , pts_true[2,:,0] , '-k' , label= 'True' ) )
+        for i in range(self.n_line-1):
+            i = i+1
             lines_true.append( ax.plot( pts_true[0,:,i]  , pts_true[1,:,i]  , pts_true[2,:,i] , '-k' ) ) #, label= 'True line %d ' %i ) )
-            # lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--', label= 'Estimated line %d' %i) )
         
         # Plot measurements
         if pts is not None:
-            line_noisy = ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'xb' , label= 'Measurements')
+            line_noisy = ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , color='k' , label= 'Pts')
             self.line_noisy = line_noisy
         
         # Plot estimation
-        for i in range(self.n_line):
+        lines_hat.append(   ax.plot( pts_hat[0,:,0]   , pts_hat[1,:,0]   , pts_hat[2,:,0]  , '--', label= 'Est.' ) )
+        for i in range(self.n_line-1):
+            i=i+1
             # lines_true.append( ax.plot( pts_true[0,:,i]  , pts_true[1,:,i]  , pts_true[2,:,i] , '-k' ) ) #, label= 'True line %d ' %i ) )
-            lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--', label= 'Estimated line %d' %i) )
+            lines_hat.append(   ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , '--' ) )
         
         self.lines_true  = lines_true
         self.lines_hat   = lines_hat
         
         ax.axis('equal')
-        ax.legend( loc = 'upper right' , fontsize = 5)
-        ax.set_xlabel( 'x', fontsize = 5)
+        #ax.set_xlabel( 'x', fontsize = 5)
         ax.grid(True)
         
         
     ############################
-    def plot_model( self, p_hat , style = '-.c' ):
+    def plot_model( self, p_hat , style = '-.' ):
         
         pts_hat   = self.p2r_w( p_hat , self.xmin , self.xmax , self.n )[1]
         
         self.lines_model = []
         
-        for i in range(self.n_line):
-            self.lines_model.append( self.ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , style ) )
+        self.lines_model.append( self.ax.plot( pts_hat[0,:,0]   , pts_hat[1,:,0]   , pts_hat[2,:,0]  , style ,  color='grey' , label= 'Init') )
+        for i in range(self.n_line-1):
+            i = i+1
+            self.lines_model.append( self.ax.plot( pts_hat[0,:,i]   , pts_hat[1,:,i]   , pts_hat[2,:,i]  , style ,  color='grey' ) )
         
         
     ############################
@@ -1341,8 +1345,9 @@ class EstimationPlot:
             
         except:
             
-            line_noisy = self.ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , label= 'Measurements')
+            line_noisy = self.ax.plot( pts_noisy[0,:] , pts_noisy[1,:] , pts_noisy[2,:], 'x' , color='k' , label= 'Pts')
             self.line_noisy = line_noisy
+            self.ax.legend( loc = 'upper right' , fontsize = 8)
         
         plt.pause( 0.001 )
         
@@ -1361,7 +1366,7 @@ class EstimationPlot:
     ############################
     def add_pts( self, pts , label = '$n_{in}$ group' ):
         
-        self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'xr' , label = label)
+        self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'xk' , label = label)
         
         plt.pause( 0.001 )
         
@@ -1423,8 +1428,8 @@ class ErrorPlot:
     ############################
     def plot_error_all_run( self , fs = 10 , save = False, name = 'test' ):
         
-        PE= self.PE
-        t = self.t
+        PE = self.PE
+        t  = self.t
         
         frame = np.linspace( 0 , self.n_steps , self.n_steps + 1)
 
@@ -1523,6 +1528,115 @@ class ErrorPlot:
             fig.savefig( name + '_nin.pdf')
             # fig.savefig( name + '_nin.png')
             # fig.savefig( name + '_nin.jpg')
+            
+            
+    ############################
+    def plot_error_mean_std( self , fs = 10 , save = False, name = 'test' , n_run_plot = 10 ):
+        
+        PE   = self.PE
+        t    = self.t
+        n_in = self.n_in
+        
+        PE_mean = np.mean( PE , axis = 2 )
+        PE_std  = np.std(  PE , axis = 2 )
+        t_mean  = np.mean( t , axis = 1 )
+        t_std   = np.std(  t , axis = 1 )
+        n_mean  = np.mean( n_in , axis = 1 )
+        n_std   = np.std(  n_in , axis = 1 )
+        
+        frame = np.linspace( 0 , self.n_steps , self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(n_run_plot):
+            ax.plot( frame , ( PE[0,:,j] + PE[1,:,j] + PE[3,:,j] ) / 3 , '--k' , linewidth=0.25 )
+        
+        ax.plot( frame , ( PE_mean[0,:] + PE_mean[1,:] + PE_mean[1,:] ) / 3 , '-r' )
+        ax.fill_between( frame, PE_mean[0,:] - PE_std[0,:], PE_mean[0,:] + PE_std[0,:], color="#DDDDDD")
+        ax.fill_between( frame, PE_mean[1,:] - PE_std[1,:], PE_mean[1,:] + PE_std[1,:], color="#DDDDDD")
+        ax.fill_between( frame, PE_mean[2,:] - PE_std[2,:], PE_mean[2,:] + PE_std[2,:], color="#DDDDDD")
+        
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$(x_o,y_o,z_o)$[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_translation_error.pdf')
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(n_run_plot):
+            ax.plot( frame , PE[3,:,j] , '--k' , linewidth=0.25)
+        ax.plot( frame , PE_mean[3,:] , '-r' )
+        ax.fill_between( frame, PE_mean[3,:] - PE_std[3,:], PE_mean[3,:] + PE_std[3,:], color="#DDDDDD")
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$\psi$ [rad]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_orientation_error.pdf')
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(n_run_plot):
+            ax.plot( frame , PE[4,:,j] , '--k' , linewidth=0.25)
+        ax.plot( frame , PE_mean[4,:] , '-r' )
+        ax.fill_between( frame, PE_mean[4,:] - PE_std[4,:], PE_mean[4,:] + PE_std[4,:], color="#DDDDDD")
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$a$[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_sag_error.pdf')
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        l_n = PE.shape[0] - 5
+        
+        for i in range(l_n):
+            k = 5 + i
+            for j in range(n_run_plot):
+                ax.plot( frame , PE[k,:,j] , '--k' , linewidth=0.25)
+            ax.plot( frame , PE_mean[k,:] , '-r' )
+            ax.fill_between( frame, PE_mean[k,:] - PE_std[k,:], PE_mean[k,:] + PE_std[k,:], color="#DDDDDD")
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$\Delta$[m]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_internaloffsets_error.pdf')
+        
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(n_run_plot):
+            ax.plot( frame[1:] , t[:,j] , '--k' , linewidth=0.25)
+        ax.plot( frame[1:] , t_mean , '-r' )
+        ax.fill_between( frame[1:], t_mean - t_std, t_mean + t_std, color="#DDDDDD")
+        
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$\Delta t$[sec]', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_solver_time.pdf')
+            
+        fig, ax = plt.subplots(1, figsize= (4, 2), dpi=300, frameon=True)
+        
+        for j in range(n_run_plot):
+            ax.plot( frame[1:] , n_in[:,j] , '--k' , linewidth=0.25)
+        ax.plot( frame[1:] , n_mean[:] , '-r' )
+        ax.fill_between( frame[1:], n_mean[:] - n_std[:], n_mean[:] + n_std[:], color="#DDDDDD")
+            
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel( 'steps', fontsize = fs)
+        ax.set_ylabel( '$n_{in}[\%]$', fontsize = fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save: fig.savefig( name + '_nin.pdf')
             
         
 
@@ -1636,7 +1750,10 @@ def ArrayModelEstimatorTest(   save    = True,
             
     # Finalize figures
     if save: plot_3d.save( name = name )
-    e_plot.plot_error_all_run( save = save , name = name )
+    # e_plot.plot_error_all_run( save = save , name = ( name + 'All') )
+    e_plot.plot_error_mean_std( save = save , name = name  )
+    
+    return e_plot
 
 '''
 #################################################################

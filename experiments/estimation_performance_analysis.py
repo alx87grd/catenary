@@ -16,6 +16,74 @@ import time
 from catenary import powerline
 
 ###############################################################################
+def Test( n_run = 5 , n_steps = 200 , plot = False , save = True ):
+    
+    # Baseline:
+    save    = save
+    plot    = plot
+    name    = 'GlobalConvergence'
+    n_run   = n_run
+    n_steps = n_steps
+    model   = powerline.ArrayModel32()
+    p_hat   = np.array([  50,  50,  50, 1.0, 300, 50.  , 30.  , 50. ])
+    p_ub    = np.array([ 150, 150, 150, 2.0, 900, 51.  , 31.  , 51. ])
+    p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ])
+    # Fake data Distribution param
+    n_obs = 20 
+    n_out = 100
+    x_min = -200 
+    x_max = 200 
+    w_l   = 0.5  
+    w_o   = 50.0 
+    center = [0,0,-200]
+    partial_obs = True
+    # Solver param
+    n_sea    = 3 
+    var      = 50 
+    Q        = 0.0001 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 200.0, 200.0 , 200.0 ])
+    l        = 1.0
+    power    = 2.0
+    b        = 1.0
+    method   = 'x'
+    n_s      = 100
+    x_min_s  = -200
+    x_max_s  = +200
+    use_grad = True
+
+    
+    plot = powerline.ArrayModelEstimatorTest(save,
+                                        plot,
+                                        name, 
+                                        n_run,
+                                        n_steps,
+                                        model,
+                                        p_hat,
+                                        p_ub,
+                                        p_lb,
+                                        n_obs,
+                                        n_out,
+                                        x_min,
+                                        x_max,
+                                        w_l,
+                                        w_o,
+                                        center, 
+                                        partial_obs,
+                                        n_sea,
+                                        var,
+                                        Q,
+                                        l,
+                                        power,
+                                        b,
+                                        method,
+                                        n_s,
+                                        x_min_s,
+                                        x_max_s,
+                                        use_grad)
+    
+    return plot
+    
+
+###############################################################################
 def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
     
     # Baseline:
@@ -565,12 +633,14 @@ if __name__ == "__main__":
     
     # ArrayModelEstimatorTest()
     
+    plot = Test( 12 , 20, True , True )
+    
     # Demo
     # GlobalConvergenceTest( 2 , True , False )
-    # PartialObsTest( 2 , True , False )
+    # PartialObsTest( 12 , True , True )
     
     # Baseline Plot
-    GlobalConvergenceTest( 20 , False , True )
+    # GlobalConvergenceTest( 20 , False , True )
     # PartialObsTest( 20 , False , True )
     
     # Regulation
