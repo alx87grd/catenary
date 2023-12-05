@@ -1085,7 +1085,7 @@ class ArrayEstimator:
         self.p_ub[0:2] = p_0[0:2] + 50.0
         self.p_lb[0:2] = p_0[0:1] - 50.0
         self.p_ub[2] = p_0[2] + 100.0
-        self.p_lb[3] = p_0[3] - 100.0
+        self.p_lb[2] = p_0[2] - 100.0
         # rotation
         self.p_ub[3] = p_0[3] + 0.5
         self.p_lb[3] = p_0[3] - 0.5
@@ -1108,8 +1108,18 @@ class ArrayEstimator:
         self.l      = 1.0
         self.power  = 2
         
+        self.use_grad = True
+        
+        # search param
+        self.n_search   = 3.0
+        self.p_var      = np.zeros( self.n_p )
+        self.p_var[0:3] = 10.0
+        self.p_var[3]   = 1.0
+        self.p_var[4]   = 200.0
+        self.p_var[5:]  = 0.5
+        
         # grouping param
-        self.d_th         = 1.0
+        self.d_th         = 2.0
         self.succes_ratio = 0.8
 
     
@@ -1145,15 +1155,14 @@ class ArrayEstimator:
         return param
             
     
-    
     #####################################################
-    def solve( self, pts , p_init , use_grad = True , callback = None ):
+    def solve( self, pts , p_init , callback = None ):
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
         func   = lambda p: J(p, pts, p_init, param)
         
-        if use_grad:
+        if self.use_grad:
             grad = lambda p: dJ_dp( p, pts, p_init, param , num = False )
         else:
             grad = None
@@ -1168,39 +1177,37 @@ class ArrayEstimator:
                         options={'disp':True,'maxiter':500})
         
         p_hat = res.x
-        j_hat = res.fun
+        # j_hat = res.fun
         
         return p_hat
     
     
     #####################################################
-    def solve_with_translation_search( self, pts , p_init , n = 10 , var = 10 , 
-                                       use_grad = True, callback = None ):
+    def solve_with_search( self, pts , p_init , callback = None ):
         
         bounds = self.get_bounds()
         param  = self.get_cost_parameters( m = pts.shape[1] )
         func   = lambda p: J(p, pts, p_init, param)
         
-        if use_grad:
+        if self.use_grad:
             grad = lambda p: dJ_dp( p, pts, p_init, param , num = False )
         else:
             grad = None
         
         # variation to params
         rng    = np.random.default_rng( seed = None )
-        deltas = var * rng.standard_normal(( 3 , n ))
+        deltas = self.p_var[:,np.newaxis] * rng.standard_normal(( self.n_p , self.n_search ))
         
         # keep original solution
-        deltas[:,0] = np.zeros((3))
+        deltas[:,0] = np.zeros(( self.n_p ))
         
         # solutions
-        ps = np.zeros(( self.n_p , n ))
-        js = np.zeros(n)
+        ps = np.zeros(( self.n_p , self.n_search ))
+        js = np.zeros( self.n_search )
         
-        for i in range(n):
+        for i in range( self.n_search ):
             
-            p      = p_init
-            p[0:3] = p_init[0:3] + deltas[:,i]
+            p = p_init + deltas[:,i]
         
             res = minimize( func,
                             p, 
@@ -1537,6 +1544,8 @@ class ErrorPlot:
         t    = self.t
         n_in = self.n_in
         
+        if n_run_plot > self.n_run: n_run_plot = self.n_run
+        
         PE_mean = np.mean( PE , axis = 2 )
         PE_std  = np.std(  PE , axis = 2 )
         t_mean  = np.mean( t , axis = 1 )
@@ -1662,7 +1671,7 @@ def ArrayModelEstimatorTest(   save    = True,
                                partial_obs = False,
                                # Solver param
                                n_sea    = 2, 
-                               var      = 10 ,
+                               var      = np.array([10,10,10,1.0,200,1.,1.,1.]),
                                Q        = 0.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]),
                                l        = 1.0,
                                power    = 2.0,
@@ -1677,6 +1686,9 @@ def ArrayModelEstimatorTest(   save    = True,
     
     estimator = ArrayEstimator( model , p_hat )
     
+    estimator.p_ver     = var
+    estimator.n_search  = n_sea
+    estimator.use_grad  = use_grad
     estimator.Q         = Q
     estimator.p_lb      = p_lb
     estimator.p_ub      = p_ub
@@ -1725,11 +1737,7 @@ def ArrayModelEstimatorTest(   save    = True,
             
             start_time = time.time()
             ##################################################################
-            p_hat      = estimator.solve_with_translation_search( pts, 
-                                                                  p_hat, 
-                                                                  n_sea, 
-                                                                  var,
-                                                                  use_grad)
+            p_hat      = estimator.solve_with_search( pts, p_hat)
             ##################################################################
             solve_time = time.time() - start_time 
             

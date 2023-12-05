@@ -22,7 +22,7 @@ from catenary import powerline
 
 
 ############################
-def basic_array32_estimator_test( n_steps = 100 ):
+def basic_array32_estimator_test( n_steps = 50 ):
     
     
     model  = powerline.ArrayModel32()
@@ -60,7 +60,7 @@ def basic_array32_estimator_test( n_steps = 100 ):
                 f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
-    plot2.plot_error_single_run()
+    plot2.plot_error_mean_std()
         
         
     return estimator
@@ -68,7 +68,7 @@ def basic_array32_estimator_test( n_steps = 100 ):
 
 
 ############################
-def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
+def basic_array_constant2221_estimator_test( n = 5 , var = 5. ):
     
     
     model  = powerline.ArrayModelConstant2221()
@@ -83,6 +83,8 @@ def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
     estimator = powerline.ArrayEstimator( model , p_hat )
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var , 0 , 0 , 0, 0 , 0])
     
     for i in range(100):
         
@@ -91,7 +93,7 @@ def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
         plot.update_pts( pts )
         
         start_time = time.time()
-        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n , var )
+        p_hat      = estimator.solve_with_search( pts , p_hat )
         solve_time = time.time() - start_time 
         
         target = estimator.is_target_aquired( p_hat , pts)
@@ -109,7 +111,7 @@ def basic_array_constant2221_estimator_test( n = 5 , var = 5 ):
 
 
 ############################
-def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
+def hard_array_constant2221_estimator_test( n = 2 , var = 5. ):
     
     
     model  = powerline.ArrayModelConstant2221()
@@ -126,6 +128,8 @@ def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
     estimator = powerline.ArrayEstimator( model , p_hat )
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.000001 , 0.002 , 0.002 , 0.002])
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var , 0 , 0 , 0, 0 , 0])
     
     for i in range(100):
         
@@ -136,7 +140,7 @@ def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
         plot.update_pts( pts )
         
         start_time = time.time()
-        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n , var )
+        p_hat      = estimator.solve_with_search( pts , p_hat )
         solve_time = time.time() - start_time 
         
         target = estimator.is_target_aquired( p_hat , pts)
@@ -157,7 +161,7 @@ def hard_array_constant2221_estimator_test( n = 2 , var = 5 ):
 
 
 ############################
-def translation_search_test( search = True , n = 3 , var = 10 ):
+def translation_search_test( search = True , n = 3 , var = 10. ):
     
     model  = powerline.ArrayModel32()
     
@@ -174,6 +178,8 @@ def translation_search_test( search = True , n = 3 , var = 10 ):
     
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var, 0 , 0 , 0, 0 , 0])
     
     
     for i in range(50):
@@ -185,7 +191,7 @@ def translation_search_test( search = True , n = 3 , var = 10 ):
         plot.update_pts( pts )
     
         if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
+            p_hat  = estimator.solve_with_search( pts , p_hat )
             
         else:
             p_hat  = estimator.solve( pts , p_hat )
@@ -226,6 +232,9 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ,  n_steps = 50 ):
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 0 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var, 0 , 0 , 0, 0 , 0])
+    
     estimator.d_th         = 3.0
     estimator.succes_ratio = 0.7
     estimator.method       = method
@@ -243,7 +252,7 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ,  n_steps = 50 ):
         
         start_time = time.time()
         if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
+            p_hat  = estimator.solve_with_search( pts , p_hat )
             
         else:
             p_hat  = estimator.solve( pts , p_hat )
@@ -261,7 +270,7 @@ def hard_test( search = True , method = 'x' , n = 2, var = 10 ,  n_steps = 50 ):
                 f" p_true : {np.array2string(p, precision=2, floatmode='fixed')}  \n" +
                 f" p_hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n" )
         
-    plot2.plot_error_single_run()
+    plot2.plot_error_mean_std()
         
         
     return estimator
@@ -297,6 +306,9 @@ def very_hard_test( search = True , method = 'x' , n = 5, var = 100 ):
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var, 0 , 0 , 0, 0 , 0])
+    
     estimator.d_th         = 5.0
     estimator.succes_ratio = 0.5
     estimator.method       = method
@@ -319,7 +331,7 @@ def very_hard_test( search = True , method = 'x' , n = 5, var = 100 ):
         start_time = time.time()
         
         if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var )
+            p_hat  = estimator.solve_with_search( pts , p_hat )
             
         else:
             p_hat  = estimator.solve( pts , p_hat )
@@ -380,6 +392,9 @@ def quad_test( search = True , method = 'x' , n = 5, var = 10 ):
     
     estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.0 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     
+    estimator.n_search = n
+    estimator.p_var    = np.array([ var, var, var, 0 , 0 , 0, 0 , 0])
+    
     estimator.method       = method
     
     for i in range(50):
@@ -409,7 +424,7 @@ def quad_test( search = True , method = 'x' , n = 5, var = 10 ):
         start_time = time.time()
         
         if search:
-            p_hat  = estimator.solve_with_translation_search( pts , p_hat , n , var , callback )
+            p_hat  = estimator.solve_with_search( pts , p_hat , callback )
             
         else:
             p_hat  = estimator.solve( pts , p_hat , callback )
@@ -428,7 +443,7 @@ def quad_test( search = True , method = 'x' , n = 5, var = 10 ):
         
         
 ############################
-def global_convergence_test( n_steps = 200 ):
+def global_convergence_test( n_steps = 100 ):
     
     xm = -200
     xp = 200
@@ -447,6 +462,9 @@ def global_convergence_test( n_steps = 200 ):
     
     estimator.Q = 10.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.01 , 0.00001 , 0.002 , 0.002 , 0.002])
     
+    estimator.n_search = 3
+    estimator.p_var    = np.array([ 50., 50., 50., 0 , 0 , 0, 0 , 0])
+    
     plot.plot_model( p_hat )
     
     for i in range(n_steps):
@@ -456,13 +474,18 @@ def global_convergence_test( n_steps = 200 ):
         plot.update_pts( pts )
         
         start_time = time.time()
-        p_hat      = estimator.solve_with_translation_search( pts , p_hat , n = 3 , var = 50 )
+        p_hat      = estimator.solve_with_search( pts , p_hat )
         solve_time = time.time() - start_time 
         
         plot.update_estimation( p_hat )
-        plot2.save_new_estimation( p_hat , solve_time )
         
-    plot2.plot_error_single_run()
+        n_tot  = pts.shape[1] - 100.0
+        pts_in = estimator.get_array_group( p_hat , pts )
+        n_in   = pts_in.shape[1] /  n_tot * 100.0
+        
+        plot2.save_new_estimation( p_hat , solve_time , n_in )
+        
+    plot2.plot_error_mean_std()
     
     
 
@@ -477,16 +500,16 @@ if __name__ == "__main__":
     """ MAIN TEST """
     
     
-    # basic_array32_estimator_test( 500 )
+    # basic_array32_estimator_test( 100 )
     
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
     
-    translation_search_test( False )
-    translation_search_test( True )
+    # translation_search_test( False )
+    # translation_search_test( True )
     
     # hard_test( method = 'sample' )
-    # hard_test( method = 'x' , n_steps = 200 )
+    hard_test( method = 'x' , n_steps = 100 )
     
     # very_hard_test()
     
