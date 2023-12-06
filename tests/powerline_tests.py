@@ -37,7 +37,7 @@ def J1_vs_J2():
     R      = np.ones( ( m ) ) * 1 / m 
     Q      = np.diag( np.ones( (n_p) ) ) * 0.0000
 
-    b      = 1.0
+    b      = 1000.0
     l      = 1.0
     power  = 2.0
 
@@ -97,7 +97,7 @@ def J_x_vs_sample():
     R      = np.ones( ( m ) ) * 1 / m 
     Q      = np.diag( np.ones( (n_p) ) ) * 0.0000
 
-    b      = 1.0
+    b      = 1000.0
     l      = 1.0
     power  = 2.0
 
@@ -135,7 +135,7 @@ def gradient_test():
     R      = np.ones( ( m ) ) * 1 / m 
     Q      = np.diag( np.ones( (n_p) ) ) * 0.001
     
-    b      = 1.0
+    b      = 1000.0
     l      = 1.0
     power  = 2.0
     

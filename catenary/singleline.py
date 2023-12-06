@@ -126,7 +126,7 @@ def p2r_w( p , x_min = -200, x_max = 200 , n = 200, ):
 # ###########################
         
 ############################
-def lorentzian( d , l = 1.0 , power = 2 , b = 1.0 ):
+def lorentzian( d , l = 1.0 , power = 2 , b = 50.0 ):
     """ 
     
     Cost shaping function that smooth out the cost of large distance to 
@@ -148,9 +148,29 @@ def lorentzian( d , l = 1.0 , power = 2 , b = 1.0 ):
         
     """
     
-    c = np.log10( 1 +  ( b * d ) ** power  / l )
+    # Saturation
+    d_sat = np.clip( d , -b , b )
+    
+    # Cost shaping
+    c = np.log10( 1 +  d_sat ** power  / l )
     
     return c
+
+############################
+def lorentzian_grad( d , l = 1.0 , power = 2 , b = 50.0 ):
+    """ 
+    grad of previous fonction
+        
+    """
+    
+    # Cost shaping
+    dc_dd = power * d ** ( power - 1 ) / ( np.log( 10 ) *  (  l +  d  ** power ) )
+    
+    # Saturation
+    dc_dd[ d > +b ] = 0.0
+    dc_dd[ d < -b ] = 0.0
+    
+    return dc_dd
 
 
 
@@ -188,7 +208,7 @@ def compute_d_min( r_measurements , r_model ):
 ############################
 
 default_cost_param = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                        1.0 , 1.0 , 2 , 1000 , -200 , 200] 
+                        1000.0 , 1.0 , 2 , 1000 , -200 , 200] 
 
 ############################
 def J( p , pts , p_nom , param = default_cost_param ):
@@ -440,7 +460,7 @@ def dJ_dp( p , pts , p_nom , param = default_cost_param , num = False ):
         ################################
         
         # Smoothing grad
-        dc_dd = b * power * ( b * d_min ) ** ( power - 1 ) / ( np.log( 10 ) *  (  l +  ( b * d_min ) ** power ) )
+        dc_dd = lorentzian_grad( d_min , l , power , b )
         
         dc_dp = dc_dd * dd_dp
         
@@ -548,20 +568,18 @@ class CatenaryEstimationPlot:
         
 
 ############################
-def plot_lorentzian( l = 10 , power = 2 , b = 1.0 , ax = None ):
+def plot_lorentzian( l = 10 , power = 2 , b = 50.0 , ax = None ):
     """ 
     x : input
     a : flattening parameter
     """
     
-    x = np.linspace( -50.0 , 50.0 , 10000 ) 
-    y = lorentzian( x , l , power )
 
     if ax is None:
         fig, ax = plt.subplots(2, figsize= (4, 3), dpi=300, frameon=True)
         
-    x = np.linspace( -100.0 , 100.0 , 10000 ) 
-    y = lorentzian( x , l , power )
+    x = np.linspace( -100.0 , 100.0 , 1000 ) 
+    y = lorentzian( x , l , power , b )
 
     ax[0].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b) )
     ax[0].set_xlabel( '$d_i$', fontsize = 8 )
@@ -571,7 +589,7 @@ def plot_lorentzian( l = 10 , power = 2 , b = 1.0 , ax = None ):
     ax[0].set_ylabel( '$c_i$', fontsize = 8 )
     
     x = np.linspace( -1.0 , 1.0 , 1000 ) 
-    y = lorentzian( x , l , power )
+    y = lorentzian( x , l , power , b )
     
     ax[1].plot( x , y , label= r'$l =$ %0.1f  $p =$ %0.1f  $b =$ %0.1f' % (l,power,b))
     ax[1].set_xlabel( '$d_i$', fontsize = 8 )
@@ -671,11 +689,10 @@ def generate_test_data( p ,  partial_obs = False, n_obs = 20, x_min = -100,
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    ax = plot_lorentzian( l = 1.0, power = 2, b = 1.0 )
+    ax = plot_lorentzian( l = 1.0, power = 2.0, b = 70.0 )
     
-    # plot_lorentzian( l = 1.0 , power = 4, b = 0.5 , ax = ax )
-    # plot_lorentzian( l = 5.0 , power = 2, b = 1.0 , ax = ax )
-    # plot_lorentzian( l = 0.01 , power = 2, b = 1.0 , ax = ax )
+    plot_lorentzian( l = 1.0 , power = 2, b = 25.0  , ax = ax )
+    plot_lorentzian( l = 1.0 , power = 2, b = 10.0 , ax = ax )
 
     
 

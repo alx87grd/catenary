@@ -71,7 +71,7 @@ def gradient_test( method = 'sample' ):
     #                                     center = [50,50,50] , w_o = 100 )
     
     params = [ method, np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                            1.0 , 1.0 , 2 , 1000 , -200 , 200] 
+                            1000.0 , 1.0 , 2 , 1000 , -200 , 200] 
     
     p_nom = p
     
@@ -111,7 +111,7 @@ def convergence_basic_test( method = 'sample' ,  grad = False ):
     bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
     
     params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     start_time = time.time()
     
@@ -170,7 +170,7 @@ def tracking_basic_test( method = 'sample' ,  grad = False , partial_obs = False
         
         bounds = [ (0,500) , (0,500), (0,500) , (0,3.14) , (10,200) ]
         params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                    1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                    1000.0 , 1.0 , 2 , 25 , -20 , 20] 
         
         start_time = time.time()
         
@@ -232,7 +232,7 @@ def tracking_advanced_test( method = 'sample' ,  grad = False , partial_obs = Tr
         bounds = [ (0,500) , (0,500), (0,500) , (0,3.14) , (100,2000) ]
         
         params = [ 'sample' , 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 ]) ,
-                    1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                    1000.0 , 1.0 , 2 , 25 , -20 , 20] 
         
         start_time = time.time()
         
@@ -279,7 +279,7 @@ def grouping_test():
     bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
     
     params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     start_time = time.time()
     
@@ -335,7 +335,7 @@ def speed_test():
     grad   = False
     
     params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     func = lambda p: catenary.J(p, pts, p_init, params)
     
@@ -366,7 +366,7 @@ def speed_test():
     grad   = True
     
     params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     func = lambda p: catenary.J(p, pts, p_init, params)
     
@@ -397,7 +397,7 @@ def speed_test():
     grad   = False
     
     params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     func = lambda p: catenary.J(p, pts, p_init, params)
     
@@ -428,7 +428,7 @@ def speed_test():
     grad   = True
     
     params = [ method , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     func = lambda p: catenary.J(p, pts, p_init, params)
     
@@ -484,7 +484,7 @@ def drake_test():
     bounds = [ (0,100), (0,100) , (0,100) , (0,3.14) , (10,200) ]
     
     params = [ 'sample' , np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ]) ,
-                1.0 , 1.0 , 2 , 25 , -20 , 20] 
+                1000.0 , 1.0 , 2 , 25 , -20 , 20] 
     
     start_time = time.time()
     
@@ -553,15 +553,15 @@ if __name__ == "__main__":
     print('catenary.dJ_dp (x) : ', gradient_test( 'x' ) )
     
     
-    convergence_basic_test()
-    convergence_basic_test( method = 'x' )
-    convergence_basic_test( grad = True )
-    convergence_basic_test( method = 'x' , grad = True )
+    # convergence_basic_test()
+    # convergence_basic_test( method = 'x' )
+    # convergence_basic_test( grad = True )
+    # convergence_basic_test( method = 'x' , grad = True )
     
-    tracking_basic_test( grad = True )
+    # tracking_basic_test( grad = True )
     
-    tracking_advanced_test()
+    # tracking_advanced_test()
     
-    grouping_test()
+    # grouping_test()
     
     speed_test()

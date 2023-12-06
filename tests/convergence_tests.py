@@ -43,7 +43,7 @@ def basic_array3_convergence_test():
     Q      = np.diag([ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 100
     x_min  = -50
@@ -105,7 +105,7 @@ def basic_array32_convergence_test():
     Q      = np.diag( np.ones(p.shape[0])  ) * 0.0
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 100
     x_min  = -50
@@ -153,7 +153,7 @@ def basic_array32_tracking_test():
     Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 501
     x_min  = -200
@@ -214,7 +214,7 @@ def hard_array32_tracking_test():
     Q      = 1 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 501
     x_min  = -200
@@ -280,7 +280,7 @@ def basic_array2221_tracking_test():
                                         0.002 , 0.002 , 0.002 ])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 501
     x_min  = -200
@@ -343,7 +343,7 @@ def hard_array2221_tracking_test():
                                         0.002 , 0.002 , 0.002 ])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 501
     x_min  = -200
@@ -407,7 +407,7 @@ def hard_arrayconstant2221_tracking_test():
     Q      = 10 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     l      = 1.0
     power  = 2.0
-    b      = 1.0
+    b      = 1000.0
     method = 'x'
     n      = 501
     x_min  = -200
@@ -485,7 +485,7 @@ def speed_test( plot = False ):
     
     R      = np.ones( ( m ) ) * 1 / m 
     Q      = 0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
-    b      = 1.0
+    b      = 1000.0
     l      = 1.0
     power  = 2.0
     method = 'sample'

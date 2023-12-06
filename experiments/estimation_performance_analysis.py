@@ -36,11 +36,11 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -48,7 +48,7 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
     use_grad = True
 
     
-    powerline.ArrayModelEstimatorTest(save,
+    powerline.ArrayModelEstimatorTest(  save,
                                         plot,
                                         name, 
                                         n_run,
@@ -102,11 +102,11 @@ def PartialObsTest( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -169,11 +169,11 @@ def RegulationVsNoRegulation( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -240,11 +240,11 @@ def MethodTests( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -311,11 +311,11 @@ def GradientTests( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -383,11 +383,11 @@ def SearchTests( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -454,11 +454,11 @@ def QuadLossTest( n_run = 5 , plot = False , save = True ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -516,7 +516,7 @@ def CrazyOutliers( n_run = 1 , plot = True , save = False ):
     p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ])
     # Fake data Distribution param
     n_obs = 10 
-    n_out = 200
+    n_out = 1000
     x_min = -200 
     x_max = 200 
     w_l   = 0.5  
@@ -525,11 +525,11 @@ def CrazyOutliers( n_run = 1 , plot = True , save = False ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 100.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -591,11 +591,11 @@ def Snowing( n_run = 1 , plot = True , save = False ):
     partial_obs = True
     # Solver param
     n_sea    = 3 
-    var      = np.array([50,50,50,1.0,200,1.,1.,1.]),
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
     Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
-    b        = 1.0
+    b        = 1000.0
     method   = 'x'
     n_s      = 100
     x_min_s  = -200
@@ -603,7 +603,73 @@ def Snowing( n_run = 1 , plot = True , save = False ):
     use_grad = True
 
     
-    powerline.ArrayModelEstimatorTest(save,
+    powerline.ArrayModelEstimatorTest(  save,
+                                        plot,
+                                        name, 
+                                        n_run,
+                                        n_steps,
+                                        model,
+                                        p_hat,
+                                        p_ub,
+                                        p_lb,
+                                        n_obs,
+                                        n_out,
+                                        x_min,
+                                        x_max,
+                                        w_l,
+                                        w_o,
+                                        center, 
+                                        partial_obs,
+                                        n_sea,
+                                        var,
+                                        Q,
+                                        l,
+                                        power,
+                                        b,
+                                        method,
+                                        n_s,
+                                        x_min_s,
+                                        x_max_s,
+                                        use_grad)
+    
+    
+###############################################################################
+def OutliersTest( n_out = 10, n_run = 5 , plot = False , save = True ):
+    
+    # Baseline:
+    save    = save
+    plot    = plot
+    name    = 'Out' + str(n_out)
+    n_run   = n_run
+    n_steps = 100
+    model   = powerline.ArrayModel32()
+    p_hat   = np.array([  50,  50,  50, 1.0, 300, 50.  , 30.  , 50. ])
+    p_ub    = np.array([ 150, 150, 150, 2.0, 900, 51.  , 31.  , 51. ])
+    p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ])
+    # Fake data Distribution param
+    n_obs = 10
+    n_out = n_out
+    x_min = -200 
+    x_max = 200 
+    w_l   = 0.5  
+    w_o   = 50.0 
+    center = [0,0,0]
+    partial_obs = True
+    # Solver param
+    n_sea    = 3 
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
+    Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
+    l        = 1.0
+    power    = 2.0
+    b        = 1000.0
+    method   = 'x'
+    n_s      = 100
+    x_min_s  = -200
+    x_max_s  = +200
+    use_grad = True
+
+    
+    powerline.ArrayModelEstimatorTest(  save,
                                         plot,
                                         name, 
                                         n_run,
@@ -649,15 +715,15 @@ if __name__ == "__main__":
     
     # Demos
     ###############################
-    GlobalConvergenceTest( 2 , True , False )
+    # GlobalConvergenceTest( 2 , True , False )
     # PartialObsTest( 2 , True , False )
     
-    # CrazyOutliers()
-    # Snowing()
+    CrazyOutliers(2 , True , False )
+    # Snowing(2 , True , False )
     
     # SearchTests(  2 , True , False )
     # QuadLossTest( 2 , True , False )
-    
+    # 
     # Short Tests
     ###############################
     # GlobalConvergenceTest( 12 , False , True )
@@ -667,6 +733,16 @@ if __name__ == "__main__":
     # GradientTests( 12 , False , True )
     # MethodTests( 12 , False , True )
     # QuadLossTest( 12 , False , True )
+    
+    # Outliers Tests
+    ###############################
+    # OutliersTest( 1 , 5 )
+    # OutliersTest( 10 , 5 )
+    # OutliersTest( 20 , 5 )
+    # OutliersTest( 50 , 5 )
+    # OutliersTest( 100 , 5 )
+    # OutliersTest( 200 , 5 )
+    # OutliersTest( 500 , 5 )
     
     # Long Run
     ###############################

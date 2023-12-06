@@ -714,7 +714,7 @@ def J( p , pts , p_nom , param  ):
     R      : dim (m) weight for each measurement points
     Q      : dim (n_p,n_p) regulation weight matrix
     
-    b      : scalar parameter in lorentzian function
+    b      : distance saturation 
     l      : scalar parameter in lorentzian function
     power  : scalar parameter in lorentzian function
     
@@ -738,7 +738,7 @@ def J( p , pts , p_nom , param  ):
     Q      = param[2]        # regulation matrix
     l      = param[3]        # cost function shaping param
     power  = param[4]        # cost function shaping param
-    b      = param[5]        # cost function shaping param
+    b      = param[5]        # distance saturation
     method = param[6]        # data association method
     n      = param[7]        # number of model pts (for sample method)
     x_min  = param[8]        # start of sample points (for sample method)
@@ -1037,7 +1037,8 @@ def dJ_dp( p , pts , p_nom , param , num = False ):
         # From distance to individual pts cost
         if not ( l == 0 ):
             # Cost shaping function
-            dc_dd = b ** power * power * d ** ( power - 1 ) / ( np.log( 10 ) * ( l + ( b * d ) ** power ) )
+            #dc_dd = power * d ** ( power - 1 ) / ( np.log( 10 ) * ( l + d ** power ) )
+            dc_dd = catenary.lorentzian_grad( d , l , power , b )
             
         else:
             # No cost shaping
@@ -1104,14 +1105,14 @@ class ArrayEstimator:
         # default cost function parameters
         self.method = 'x'
         self.Q      = np.diag( np.zeros( self.n_p ) )
-        self.b      = 1.0
+        self.b      = 1000.0
         self.l      = 1.0
         self.power  = 2
         
         self.use_grad = True
         
         # search param
-        self.n_search   = 3.0
+        self.n_search   = 3
         self.p_var      = np.zeros( self.n_p )
         self.p_var[0:3] = 10.0
         self.p_var[3]   = 1.0
@@ -1285,6 +1286,7 @@ class EstimationPlot:
         self.xmax   = xmax
         self.p2r_w  = p2r_w
         self.n_line = pts_true.shape[2]
+        self.show   = True
         
         # Plot init position (saved)
         self.plot_model( p_hat )
@@ -1340,7 +1342,7 @@ class EstimationPlot:
             self.lines_hat[i][0].set_data( pts_hat[0,:,i] , pts_hat[1,:,i]  )
             self.lines_hat[i][0].set_3d_properties( pts_hat[2,:,i] )
         
-        plt.pause( 0.001 )
+        if self.show: plt.pause( 0.001 )
         
     ############################
     def update_pts( self, pts_noisy  ):
@@ -1356,7 +1358,7 @@ class EstimationPlot:
             self.line_noisy = line_noisy
             self.ax.legend( loc = 'upper right' , fontsize = 8)
         
-        plt.pause( 0.001 )
+        if self.show: plt.pause( 0.001 )
         
     ############################
     def update_true( self, p_true ):
@@ -1367,7 +1369,7 @@ class EstimationPlot:
             self.lines_true[i][0].set_data( pts_true[0,:,i] , pts_true[1,:,i]  )
             self.lines_true[i][0].set_3d_properties( pts_true[2,:,i] )
         
-        plt.pause( 0.001 )
+        if self.show: plt.pause( 0.001 )
         
     
     ############################
@@ -1375,7 +1377,7 @@ class EstimationPlot:
         
         self.ax.plot( pts[0,:] , pts[1,:] , pts[2,:], 'xk' , label = label)
         
-        plt.pause( 0.001 )
+        if self.show: plt.pause( 0.001 )
         
     ############################
     def save( self, name = 'test' ):
@@ -1675,7 +1677,7 @@ def ArrayModelEstimatorTest(   save    = True,
                                Q        = 0.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002]),
                                l        = 1.0,
                                power    = 2.0,
-                               b        = 1.0,
+                               b        = 1000.0,
                                method   = 'x',
                                n_s      = 100,
                                x_min_s  = -200,
@@ -1686,7 +1688,7 @@ def ArrayModelEstimatorTest(   save    = True,
     
     estimator = ArrayEstimator( model , p_hat )
     
-    estimator.p_ver     = var
+    estimator.p_var     = var
     estimator.n_search  = n_sea
     estimator.use_grad  = use_grad
     estimator.Q         = Q
@@ -1707,9 +1709,6 @@ def ArrayModelEstimatorTest(   save    = True,
         
         print('Run no' , j)
         
-        # Alway plot the 3d graph for the last run
-        if j == (n_run-1): plot = True
-        
         # Random true line position
         p_true  = np.random.uniform( p_lb , p_ub )
         
@@ -1718,6 +1717,11 @@ def ArrayModelEstimatorTest(   save    = True,
         if j == 0: e_plot = ErrorPlot( p_true , p_hat , n_steps , n_run )
         else:      e_plot.init_new_run( p_true , p_hat )
         
+        # Alway plot the 3d graph for the last run
+        if j == (n_run-1): 
+            plot    = True
+            plot_3d = EstimationPlot( p_true , p_hat , None, model.p2r_w )
+            plot_3d.show = False
     
         for i in range(n_steps):
             

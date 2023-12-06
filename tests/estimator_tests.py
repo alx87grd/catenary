@@ -460,16 +460,18 @@ def global_convergence_test( n_steps = 100 ):
     
     estimator = powerline.ArrayEstimator( model , p_hat )
     
-    estimator.Q = 10.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.01 , 0.00001 , 0.002 , 0.002 , 0.002])
+    estimator.Q = 1.0 * np.diag([ 0.0002 , 0.0002 , 0.0002 , 0.01 , 0.00001 , 0.002 , 0.002 , 0.002])
     
     estimator.n_search = 3
     estimator.p_var    = np.array([ 50., 50., 50., 0 , 0 , 0, 0 , 0])
+    
+    estimator.b = 200
     
     plot.plot_model( p_hat )
     
     for i in range(n_steps):
         
-        pts = model.generate_test_data( p , partial_obs = True , x_min = xm, x_max = xp , n_out = 100 , w_o = 50.0 , center = [0,0,-200])
+        pts = model.generate_test_data( p , partial_obs = True , x_min = xm, x_max = xp , n_out = 500 , w_o = 50.0 , center = [0,0,-200])
         
         plot.update_pts( pts )
         
@@ -506,10 +508,10 @@ if __name__ == "__main__":
     # hard_array_constant2221_estimator_test()
     
     # translation_search_test( False )
-    # translation_search_test( True )
+    translation_search_test( True )
     
     # hard_test( method = 'sample' )
-    hard_test( method = 'x' , n_steps = 100 )
+    # hard_test( method = 'x' , n_steps = 100 )
     
     # very_hard_test()
     
