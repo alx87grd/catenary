@@ -10,10 +10,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from scipy.optimize import minimize
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from rosbags.rosbag1 import Reader
+from rosbags.typesys import Stores, get_typestore
 
 ###########################
 # catenary function
 ###########################
+
 
 from catenary import singleline as catenary
 
@@ -1650,12 +1656,39 @@ class ErrorPlot:
         if save: fig.savefig( name + '_nin.pdf')
             
         
+# Create a typestore and get the string class.
+typestore = get_typestore(Stores.ROS1_NOETIC)
+
+def rosbag_to_array( bag_file , topic ):
+    
+    pts = []
+    
+    bag_path = 'rosbag/' + bag_file + '.bag'
+    with Reader(bag_path) as reader:
+        # for connection in reader.connections:
+        #     if connection.topic == topic:
+        #         print(connection)
+        for connection, timestamp, rawdata in reader.messages():
+            if connection.topic == topic:
+                # print(connection.msgtype)
+                msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
+                # convert pointcloud2 to xyz array
+                print(msg.header)
+
+    # return np.array( pts ).T
+    
+    # for topic, msg, t in bag.read_messages(topics=[topic]):
+        
+    #     pts.append( [ msg.x , msg.y , msg.z ] )
+        
+    # return np.array( pts ).T
+
 
 ###############################################################################
 def ArrayModelEstimatorTest(   save    = True,
                                plot    = True,
                                name    = 'test' , 
-                               n_run   = 5,
+                               n_run   = 1,
                                n_steps = 10,
                                # Model
                                model   = ArrayModel32(),
@@ -1737,6 +1770,10 @@ def ArrayModelEstimatorTest(   save    = True,
                                             partial_obs
                                             )
             
+            print(pts.shape)
+
+            # pts = read_points('rosbag/rosbag.bag', 'topic')
+            
             if plot: plot_3d.update_pts( pts )
             
             start_time = time.time()
@@ -1777,8 +1814,9 @@ def ArrayModelEstimatorTest(   save    = True,
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    pass
-    
+    rosbag_to_array('ligne315kv_test2', '/velodyne_points')
+    # ArrayModelEstimatorTest()
+
 
 
 
