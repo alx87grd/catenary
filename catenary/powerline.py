@@ -14,7 +14,12 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from rosbags.rosbag1 import Reader
-from rosbags.typesys import Stores, get_typestore
+from rosbags.typesys import Stores, get_typestore, get_types_from_msg
+# import sensor_msgs.msg._point_cloud2 as pc2
+from pathlib import Path
+
+import io
+from PIL import Image
 
 ###########################
 # catenary function
@@ -22,6 +27,8 @@ from rosbags.typesys import Stores, get_typestore
 
 
 from catenary import singleline as catenary
+from mpl_toolkits.mplot3d import Axes3D
+from tqdm import tqdm
 
 
 ###########################
@@ -639,6 +646,107 @@ class Quad( ArrayModel ):
         return grad
     
 
+class ArrayModel222( ArrayModel ):
+    """
+    ArrayModel 222 is a model for 6 catenary with 3 offsets variables
+    
+    inputs
+    --------
+    p      : vector of parameters 
+    
+        x_0 : x translation of local frame orign in world frame
+        y_0 : y translation of local frame orign in world frame
+        z_0 : z translation of local frame orign in world frame
+        phi : z rotation of local frame basis in in world frame
+        a   : sag parameter
+        d1  : horizontal distance between power lines
+        d2  : horizontal distance between power lines
+        h1  : vertical distance between power lines 
+        
+    ----------------------------------------------------------
+    
+     _         4                  d1       5
+     ^                       |----------->   
+     |
+     h1
+     |                          
+     _     2                                     3
+     ^                                 d2
+     |                       |------------------->   
+     h1          
+     |
+     _         0                           1             
+       
+                                  d1
+                            |------------->          
+    
+    
+    ----------------------------------------------------------
+        
+    """
+    
+    #################################################
+    def __init__(self):
+
+        ArrayModel.__init__( self, l = 8 , q = 6 )
+        
+        
+    ############################
+    def p2deltas( self, p ):
+        """ 
+        Compute the translation vector of each individual catenary model origin
+        with respect to the model origin in the model frame
+        """
+        
+        delta = np.zeros((3, self.q ))
+        
+        d1  = p[5]
+        d2  = p[6]
+        h1  = p[7]
+        
+        # Offset in local catenary frame
+        delta[1,0] = -d1    # y offset of cable 0
+        delta[1,1] = +d1    # y offset of cable 1
+        delta[1,2] = -d2    # y offset of cable 2
+        delta[1,3] = +d2    # y offset of cable 3
+        delta[1,4] = -d1    # y offset of cable 4
+        delta[1,5] = +d1    # y offset of cable 5
+
+        delta[2,2] = +h1    # z offset of cable 2
+        delta[2,3] = +h1    # z offset of cable 3
+        delta[2,4] = +2*h1    # z offset of cable 4
+        delta[2,5] = +2*h1    # z offset of cable 5
+
+        return delta
+
+    ############################
+    def deltas_grad( self ):
+        """ 
+        Compute the gradient of deltas with respect to offset parameters
+        """
+
+        grad = np.zeros(( 3 , self.q , ( self.l - 5 ) ))
+
+        grad[:,:,0] = np.array([[ 0.,  0.,  0 ,  0.,  0.,  0.],
+                                [-1., +1.,  0.,  0., -1., +1.],
+                                [ 0.,  0.,  0.,  0.,  0.,  0.]])
+        
+        grad[:,:,1] = np.array([[ 0.,  0.,  0 ,  0.,  0.,  0.],
+                                [ 0.,  0., -1., +1.,  0.,  0.],
+                                [ 0.,  0.,  0.,  0.,  0.,  0.]])
+        
+        grad[:,:,2] = np.array([[ 0.,  0.,  0 ,  0.,  0.,  0.],
+                                [ 0.,  0.,  0.,  0.,  0.,  0.],
+                                [ 0.,  0., +1., +1., +2., +2.]])
+        
+
+        return grad
+
+
+
+    
+
+
 
 # ###########################
 # Optimization
@@ -697,7 +805,7 @@ def find_closest_distance_cable_point( p , pts , p2r_w , x_min = -200 , x_max = 
 # Cost function of match between pts cloud and an ArrayModel parameter vector
 ###############################################################################
 
-def J( p , pts , p_nom , param  ):
+def     J( p , pts , p_nom , param  ):
     """ 
     cost function for curve fitting a catenary model on a point cloud
     
@@ -1321,7 +1429,7 @@ class EstimationPlot:
         self.lines_true  = lines_true
         self.lines_hat   = lines_hat
         
-        ax.axis('equal')
+        # ax.axis('equal')
         #ax.set_xlabel( 'x', fontsize = 5)
         ax.grid(True)
         
@@ -1388,7 +1496,7 @@ class EstimationPlot:
     ############################
     def save( self, name = 'test' ):
         
-        self.fig.savefig( name + '_3d_estimation.pdf')
+        self.fig.savefig( name + '_3d_estimation.png')
         
         
         
@@ -1654,34 +1762,7 @@ class ErrorPlot:
         ax.grid(True)
         fig.tight_layout()
         if save: fig.savefig( name + '_nin.pdf')
-            
-        
-# Create a typestore and get the string class.
-typestore = get_typestore(Stores.ROS1_NOETIC)
 
-def rosbag_to_array( bag_file , topic ):
-    
-    pts = []
-    
-    bag_path = 'rosbag/' + bag_file + '.bag'
-    with Reader(bag_path) as reader:
-        # for connection in reader.connections:
-        #     if connection.topic == topic:
-        #         print(connection)
-        for connection, timestamp, rawdata in reader.messages():
-            if connection.topic == topic:
-                # print(connection.msgtype)
-                msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
-                # convert pointcloud2 to xyz array
-                print(msg.header)
-
-    # return np.array( pts ).T
-    
-    # for topic, msg, t in bag.read_messages(topics=[topic]):
-        
-    #     pts.append( [ msg.x , msg.y , msg.z ] )
-        
-    # return np.array( pts ).T
 
 
 ###############################################################################
@@ -1697,11 +1778,11 @@ def ArrayModelEstimatorTest(   save    = True,
                                p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ]),
                                # Fake data Distribution param
                                n_obs = 20, 
-                               n_out = 10,
+                               n_out = 0,
                                x_min = -200, 
                                x_max = 200, 
-                               w_l   = 0.5,  
-                               w_o   = 100,
+                               w_l   = 0.5, 
+                               w_o   = 100, 
                                center = [0,0,0] , 
                                partial_obs = False,
                                # Solver param
@@ -1715,7 +1796,10 @@ def ArrayModelEstimatorTest(   save    = True,
                                n_s      = 100,
                                x_min_s  = -200,
                                x_max_s  = +200,
-                               use_grad = True):
+                               use_grad = True,
+                               rosbag  = False,
+                               rosfile = 'ligne315kv_test2' # inside rosbag folder
+                               ):
     
     
     
@@ -1736,6 +1820,12 @@ def ArrayModelEstimatorTest(   save    = True,
     estimator.x_max     = x_max_s
     estimator.n_sample  = n_s
     estimator.d_th      = w_l * 5.0
+
+    if rosbag:            
+        rosbag_pts = rosbag_to_array(rosfile, '/filtered_cloud_points')
+        n_steps = len(rosbag_pts)
+        n_steps = 100
+
     
     
     for j in range(n_run):
@@ -1743,9 +1833,11 @@ def ArrayModelEstimatorTest(   save    = True,
         print('Run no' , j)
         
         # Random true line position
-        p_true  = np.random.uniform( p_lb , p_ub )
+        p_hat  = np.random.uniform( p_lb , p_ub )
+        # p_true  = np.random.uniform( p_lb , p_ub )
+        p_true  = np.zeros_like(p_lb)
         
-        if plot: plot_3d = EstimationPlot( p_true , p_hat , None, model.p2r_w )
+        if plot: plot_3d = EstimationPlot( p_true , p_hat , None, model.p2r_w, xmin = -200, xmax = 200 )
         
         if j == 0: e_plot = ErrorPlot( p_true , p_hat , n_steps , n_run )
         else:      e_plot.init_new_run( p_true , p_hat )
@@ -1756,23 +1848,24 @@ def ArrayModelEstimatorTest(   save    = True,
             plot_3d = EstimationPlot( p_true , p_hat , None, model.p2r_w )
             plot_3d.show = False
     
-        for i in range(n_steps):
+        for i in (range(n_steps)):
             
-            # Generate fake noisy data
-            pts = model.generate_test_data( p_true, 
-                                            n_obs, 
-                                            x_min, 
-                                            x_max,
-                                            w_l, 
-                                            n_out, 
-                                            center, 
-                                            w_o, 
-                                            partial_obs
-                                            )
-            
-            print(pts.shape)
+            if rosbag: pts = rosbag_pts[i]
 
-            # pts = read_points('rosbag/rosbag.bag', 'topic')
+            else:
+                # Generate fake noisy data
+                pts = model.generate_test_data( p_true, 
+                                                n_obs, 
+                                                x_min, 
+                                                x_max,
+                                                w_l, 
+                                                n_out, 
+                                                center, 
+                                                w_o, 
+                                                partial_obs
+                                                )
+            
+            # print(pts.shape)
             
             if plot: plot_3d.update_pts( pts )
             
@@ -1804,6 +1897,42 @@ def ArrayModelEstimatorTest(   save    = True,
     
     return e_plot
 
+########################################################################################
+############################# READ THE ROSBAG FILE #####################################
+########################################################################################
+
+# Create a typestore and get the string class.
+typestore = get_typestore(Stores.ROS1_NOETIC)   
+
+# tf2_msg = Path('rosbag/TFMessage.msg').read_text()
+tf2_msg = Path(os.path.join(os.path.dirname(__file__), '..', 'rosbag', 'TFMessage.msg')).read_text()
+typetf2 = get_types_from_msg(tf2_msg, 'tf2_msgs/msg/TFMessage')
+
+typestore.register(typetf2)
+
+def rosbag_to_array(bag_file, topic):
+
+    pts = []
+    bag_path = os.path.join(os.path.dirname(__file__), '..', 'rosbag', bag_file + '.bag')
+    
+    with Reader(bag_path) as reader:
+        for connection, timestamp, rawdata in reader.messages():
+            if connection.topic == topic:
+                msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
+                
+                # reshape the data to a 2D array of shape (point_step, width)
+                data = msg.data.reshape(msg.width, msg.point_step)[:, 0:12]
+                
+                # reshape the data from 12 bytes to 3 floats
+                data = data.view(np.float32).reshape(msg.width, 3).T
+                pts.append(data)
+
+    return pts
+
+
+
+
+
 '''
 #################################################################
 ##################          Main                         ########
@@ -1813,11 +1942,83 @@ def ArrayModelEstimatorTest(   save    = True,
 
 if __name__ == "__main__":     
     """ MAIN TEST """
-    
-    rosbag_to_array('ligne315kv_test2', '/velodyne_points')
-    # ArrayModelEstimatorTest()
+
+    bagname = 'contournement_pylone'
+
+    fig = plt.figure(figsize=(14, 10))
+    ax = plt.axes(projection='3d')
+    pts = rosbag_to_array(bagname, '/filtered_cloud_points')
+    # pts = rosbag_to_array('ligne315kv_test2', '/velodyne_points')
+    # go through all the points and plot them in 3D and update the plot for each frame
+    # for i in range(len(pts)):
+    #     ax.clear()
+    #     ax.scatter3D(pts[i][0], pts[i][1], pts[i][2], cmap='Greens')
+    #     plt.pause(0.1)
+
+    print(len(pts))
+    print(pts[0].shape)
+
+    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
+    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
+
+    # model = ArrayModel222()
+    model = ArrayModel()
+    estimator = ArrayEstimator(model, param_powerline)
+
+    # estimator.Q = 1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
+    # estimator.l = 1.0
+    # estimator.power = 2.0
+    # estimator.n_search = 2
+    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
+    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
+
+    estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
+    estimator.l = 1.0
+    estimator.power = 2.0
+    estimator.n_search = 2
+    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
+    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
+
+    estimator.p_var[0:3] = 5.0
+    estimator.p_var[3]   = 5.0
+    estimator.p_var[4]   = 500.0
+    estimator.p_var[5:]  = 5.5
+
+    last_time = time.time()
+
+    images = []
+
+    for pt_id in range(300):
+        pt = pts[pt_id+800]
+        param_powerline = estimator.solve_with_search(pt, param_powerline)
+        pts_hat = model.p2r_w(param_powerline, 50, -50, 100)[1]
+        print(param_powerline)
+
+        ax.clear()
+        ax.scatter3D(pt[0], pt[1], pt[2], cmap='Greens')
+        for i in range(pts_hat.shape[2]):
+            ax.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], '-k')
+        plt.pause(0.05)
+        # save plot images as gif
+        # plt.savefig('figures/test' + str(pt_id) + '.png')
+
+        if pt_id % 3 == 0:
+        # Create a bytes buffer to save the plot
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+
+            # Open the PNG image from the buffer and convert it to a NumPy array
+            image = Image.open(buf)
+            buf.seek(0)
+            images.append(image)
 
 
+    # save as a gif   
+    images[0].save('figures/' + bagname + '.gif', save_all=True, append_images=images[1:], optimize=False, duration=500, loop=0)
+    # Close the buffer
+    buf.close()
+        
 
 
 

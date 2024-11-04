@@ -77,6 +77,77 @@ def GlobalConvergenceTest( n_run = 5 , plot = False , save = True ):
                                         x_max_s,
                                         use_grad)
     
+
+###############################################################################
+def GlobalConvergenceBagTest( n_run = 5 , plot = False , save = True ):
+    
+    # Baseline:
+    save    = save
+    plot    = plot
+    rosbag  = True
+    rosfile = 'ligne315kv_test2'
+    name    = 'GlobalConvergence'
+    n_run   = n_run
+    n_steps = 50
+    model   = powerline.ArrayModel222()
+    p_hat   = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
+    p_ub    = np.array([ 100.,  100., 15.,  3.14, 1000., 7., 9., 9.])
+    p_lb    = np.array([-100., -100., 5., 1.5,  20., 5., 6., 6.])
+
+    # Fake data Distribution param
+    n_obs = 10 
+    n_out = 20
+    x_min = -200 
+    x_max = 200 
+    w_l   = 0.5  
+    w_o   = 50.0 
+    center = [0,0,-200]
+    partial_obs = True
+    # Solver param
+    n_sea    = 3 
+    var      = np.array([50,50,50,1.0,200,1.,1.,1.])
+    Q        = 50 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
+    l        = 1.0
+    power    = 2.0
+    b        = 1000.0
+    method   = 'x'
+    n_s      = 100
+    x_min_s  = -200
+    x_max_s  = +200
+    use_grad = True
+
+    
+    powerline.ArrayModelEstimatorTest(  save,
+                                        plot,
+                                        name, 
+                                        n_run,
+                                        n_steps,
+                                        model,
+                                        p_hat,
+                                        p_ub,
+                                        p_lb,
+                                        n_obs,
+                                        n_out,
+                                        x_min,
+                                        x_max,
+                                        w_l,
+                                        w_o,
+                                        center, 
+                                        partial_obs,
+                                        n_sea,
+                                        var,
+                                        Q,
+                                        l,
+                                        power,
+                                        b,
+                                        method,
+                                        n_s,
+                                        x_min_s,
+                                        x_max_s,
+                                        use_grad,
+                                        rosbag,
+                                        rosfile)
+    
     
 ###############################################################################
 def PartialObsTest( n_run = 5 , plot = False , save = True ):
@@ -86,7 +157,7 @@ def PartialObsTest( n_run = 5 , plot = False , save = True ):
     plot    = plot
     name    = 'PartialObs'
     n_run   = n_run
-    n_steps = 100
+    n_steps = 200
     model   = powerline.ArrayModel32()
     p_hat   = np.array([  50,  50,  50, 1.0, 300, 50.  , 30.  , 50. ])
     p_ub    = np.array([ 150, 150, 150, 2.0, 900, 51.  , 31.  , 51. ])
@@ -715,10 +786,11 @@ if __name__ == "__main__":
     
     # Demos
     ###############################
-    # GlobalConvergenceTest( 2 , True , False )
+    # GlobalConvergenceTest( 2 , True , True )
+    GlobalConvergenceBagTest( 2 , True , False )
     # PartialObsTest( 2 , True , False )
     
-    CrazyOutliers(2 , True , False )
+    # CrazyOutliers(2 , True , False )
     # Snowing(2 , True , False )
     
     # SearchTests(  2 , True , False )
@@ -759,3 +831,10 @@ if __name__ == "__main__":
     # SearchTests( 1000 , False , True )
     # QuadLoss
     # QuadLossTest( 100 , False , True )
+
+
+
+    # faire un powerpoint avec différents tests
+    # trouver des moments dans les tests ou le drone bouge beaucoup ( random du temps de début )
+    # facteur n? % des bon points trouvés
+    # séparer x, y et z?
