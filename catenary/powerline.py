@@ -2060,7 +2060,7 @@ def quaternion_rotation_matrix(Q):
 if __name__ == "__main__":     
     """ MAIN TEST """
 
-    bagname = 'ligne315kv_test1'
+    bagname = 'scenario_failsafe_long_approach'
 
     fig = plt.figure(figsize=(14, 10))
     ax = plt.axes(projection='3d')
@@ -2073,6 +2073,7 @@ if __name__ == "__main__":
     #     ax.scatter3D(velodyne_pts[i][0], velodyne_pts[i][1], velodyne_pts[i][2], cmap='Greens')
     #     plt.pause(0.1)
 
+### ajouter des scripts par bag avec les bons paramètres
 
     print(len(line_pts))
     print(line_pts[0].shape)
@@ -2081,26 +2082,26 @@ if __name__ == "__main__":
     print(len(velodyne_pts))
     print(velodyne_pts[0].shape)
 
-    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
-    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
+    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
+    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
 
-    model = ArrayModel222()
-    # model = ArrayModel()
+    # model = ArrayModel222() 
+    model = ArrayModel()
     estimator = ArrayEstimator(model, param_powerline)
 
-    estimator.Q = 1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
-    estimator.l = 1.0
-    estimator.power = 2.0
-    estimator.n_search = 2
-    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
-    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
-
-    # estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
+    # estimator.Q = 1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     # estimator.l = 1.0
     # estimator.power = 2.0
     # estimator.n_search = 2
-    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
-    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
+    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
+    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
+
+    estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
+    estimator.l = 1.0
+    estimator.power = 2.0
+    estimator.n_search = 2
+    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
+    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
 
     estimator.p_var[0:3] = 5.0
     estimator.p_var[3]   = 5.0
@@ -2114,8 +2115,8 @@ if __name__ == "__main__":
     for pt_id in range(len(line_pts)):
         pt = line_pts[pt_id]
         param_powerline = estimator.solve_with_search(pt, param_powerline)
-        pts_hat = model.p2r_w(param_powerline, 0, -100, 100)[1]
-        # pts_hat = model.p2r_w(param_powerline, 50, -50, 100)[1]
+        # pts_hat = model.p2r_w(param_powerline, 0, -100, 100)[1]
+        pts_hat = model.p2r_w(param_powerline, 50, -50, 100)[1]
         # print(param_powerline)
         ax.clear()
         ax.scatter3D(velodyne_pts[pt_id][0], velodyne_pts[pt_id][1], velodyne_pts[pt_id][2], color='red', alpha=1, s=1)
