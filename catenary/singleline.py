@@ -689,10 +689,12 @@ def generate_test_data( p ,  partial_obs = False, n_obs = 20, x_min = -100,
 if __name__ == "__main__":     
     """ MAIN TEST """
     
-    ax = plot_lorentzian( l = 1.0, power = 2.0, b = 70.0 )
+    ax = plot_lorentzian( l = 1.0, power = 2.0, b = 25.0 )
     
-    plot_lorentzian( l = 1.0 , power = 2, b = 25.0  , ax = ax )
-    plot_lorentzian( l = 1.0 , power = 2, b = 10.0 , ax = ax )
+    plot_lorentzian( l = 1.0 , power = 2, b = 2.0  , ax = ax )
+    
+    
+    plot_lorentzian( l = 1.0 , power = 2, b = 2.0 , ax = ax )
 
     
 

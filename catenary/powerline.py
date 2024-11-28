@@ -8,12 +8,35 @@ Created on Mon Oct 23 09:03:21 2023
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+# Use interactive backend
+try:
+    # Default usage for interactive mode
+    matplotlib.use('Qt5Agg')
+    plt.ion() # Set interactive mode
+    
+except:
+
+    try:
+        # For MacOSX
+        matplotlib.use('MacOSX')
+        plt.ion()
+    
+    except:
+
+        print('Warning: Could not load validated backend mode for matplotlib')
+        print('Matplotlib list of interactive backends:', matplotlib.rcsetup.interactive_bk)
+        plt.ion() # Set interactive mode
+
 import time
 from scipy.optimize import minimize
 import sys
 import os
 import math
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+path = '/Users/alex/Data/rosbag/'
+
+
 from rosbags.rosbag1 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
 # import sensor_msgs.msg._point_cloud2 as pc2
@@ -1906,7 +1929,7 @@ def ArrayModelEstimatorTest(   save    = True,
 typestore = get_typestore(Stores.ROS1_NOETIC)   
 
 # tf2_msg = Path('rosbag/TFMessage.msg').read_text()
-tf2_msg = Path(os.path.join(os.path.dirname(__file__), '..', 'rosbag', 'TFMessage.msg')).read_text()
+tf2_msg = Path(os.path.join( path, 'TFMessage.msg')).read_text()
 typetf2 = get_types_from_msg(tf2_msg, 'tf2_msgs/msg/TFMessage')
 
 typestore.register(typetf2)
@@ -1923,7 +1946,7 @@ def rosbag_to_array(bag_file, topic):
     offset_base_link_rot = np.array([0.0, 0.0, 0.0, 1.0])
     offset_base_link_translation = np.array([0.0, 0.0, 0.0])
 
-    bag_path = os.path.join(os.path.dirname(__file__), '..', 'rosbag', bag_file + '.bag')
+    bag_path = os.path.join( path, bag_file + '.bag')
     
     with Reader(bag_path) as reader:
         for connection, timestamp, rawdata in tqdm(reader.messages()):
@@ -2060,7 +2083,7 @@ def quaternion_rotation_matrix(Q):
 if __name__ == "__main__":     
     """ MAIN TEST """
 
-    bagname = 'scenario_failsafe_long_approach'
+    bagname = 'ligne315kv_test1'
 
     fig = plt.figure(figsize=(14, 10))
     ax = plt.axes(projection='3d')
