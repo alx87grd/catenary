@@ -94,11 +94,11 @@ def no_regulation():
     rosbagEvaluation(bagname, param_powerline, estimator, filtered=True)
 
 
-def test2():
+def test2_baseline():
 
     # Test 2
     ############### ligne315kv_test2 ################
-    bagname = 'ligne315kv_test2'
+    bagname = 'ligne120kv_test1'
 
     param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
 
@@ -118,6 +118,59 @@ def test2():
     estimator.p_var[5:]  = 5.5
 
     rosbagEvaluation(bagname, param_powerline, estimator)
+
+
+def test2_lidar_bad():
+
+    # Test 2
+    ############### ligne315kv_test2 ################
+    bagname = 'ligne120kv_test1'
+
+    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
+
+    model = powerline.ArrayModel222()
+    estimator = powerline.ArrayEstimator(model, param_powerline)
+
+    estimator.Q = 1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
+    estimator.l = 1.0
+    estimator.power = 2.0
+    estimator.n_search = 2
+    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
+    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
+
+    estimator.p_var[0:3] = 5.0
+    estimator.p_var[3]   = 5.0
+    estimator.p_var[4]   = 500.0
+    estimator.p_var[5:]  = 5.5
+
+    rosbagEvaluation(bagname, param_powerline, estimator, filtered=False)
+
+def test2_lidar_good():
+
+    # Test 2
+    ############### ligne315kv_test2 ################
+    bagname = 'ligne120kv_test1'
+
+    param_powerline = np.array([  -0.,  50., 15., 1.8, 500, 6., 7.8, 7.5 ])
+
+    model = powerline.ArrayModel222()
+    estimator = powerline.ArrayEstimator(model, param_powerline)
+
+    estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
+    estimator.l = 1.0
+    estimator.b = 8.0
+    estimator.power = 2.0
+    estimator.n_search = 3
+    estimator.p_ub = np.array([ 200.,  200., 15.,  1.9, 600., 7., 9., 9.])
+    estimator.p_lb = np.array([-200., -200.,  10., 1.5,  5., 5., 5., 5.])
+
+    estimator.p_var[0:3] = 10.0
+    estimator.p_var[3]   = 2.0
+    estimator.p_var[4]   = 500.0
+    estimator.p_var[5:]  = 5.5
+
+    rosbagEvaluation(bagname, param_powerline, estimator, filtered=False)
+
 
 def test3():
 
@@ -209,11 +262,15 @@ def test_lidar_pts():
 if __name__ == "__main__":     
     """ MAIN TEST """
 
-    test_baseline()
+    # test_baseline()
     # test_lidar_pts()
-
     # no_regulation()
-    # test2()
+
+    # test2_baseline()
+    # test2_lidar_bad()
+    test2_lidar_good()
+
+
     # test3()
     # test4()
 
