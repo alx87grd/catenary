@@ -516,7 +516,7 @@ def CrazyOutliers( n_run = 1 , plot = True , save = False ):
     p_lb    = np.array([   0,   0,   0, 0.0, 300, 49.  , 29.  , 49. ])
     # Fake data Distribution param
     n_obs = 10 
-    n_out = 1000
+    n_out = 200
     x_min = -200 
     x_max = 200 
     w_l   = 0.5  
@@ -526,7 +526,7 @@ def CrazyOutliers( n_run = 1 , plot = True , save = False ):
     # Solver param
     n_sea    = 3 
     var      = np.array([50,50,50,1.0,200,1.,1.,1.])
-    Q        = 5 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
+    Q        = 1 * 1e-6 * np.diag([ 20. , 20. , 20. , 1000.0 , 1.0, 800.0, 200.0 , 200.0 ])
     l        = 1.0
     power    = 2.0
     b        = 100.0
@@ -718,10 +718,10 @@ if __name__ == "__main__":
     # GlobalConvergenceTest( 2 , True , False )
     # PartialObsTest( 2 , True , False )
     
-    CrazyOutliers(2 , True , False )
+    # CrazyOutliers(2 , True , False )
     # Snowing(2 , True , False )
     
-    # SearchTests(  2 , True , False )
+    SearchTests(  2 , True , False )
     # QuadLossTest( 2 , True , False )
     # 
     # Short Tests
