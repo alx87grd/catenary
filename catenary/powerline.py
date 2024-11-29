@@ -13,11 +13,6 @@ from scipy.optimize import minimize
 import sys
 import os
 import math
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from rosbags.rosbag1 import Reader
-from rosbags.typesys import Stores, get_typestore, get_types_from_msg
-# import sensor_msgs.msg._point_cloud2 as pc2
-from pathlib import Path
 
 import io
 from PIL import Image
@@ -29,7 +24,6 @@ from PIL import Image
 
 from catenary import singleline as catenary
 from mpl_toolkits.mplot3d import Axes3D
-from tqdm import tqdm
 
 
 ###########################
@@ -1898,155 +1892,6 @@ def ArrayModelEstimatorTest(   save    = True,
     
     return e_plot
 
-########################################################################################
-############################# READ THE ROSBAG FILE #####################################
-########################################################################################
-
-# Create a typestore and get the string class.
-typestore = get_typestore(Stores.ROS1_NOETIC)   
-
-# tf2_msg = Path('rosbag/TFMessage.msg').read_text()
-tf2_msg = Path(os.path.join(os.path.dirname(__file__), '..', 'rosbag', 'TFMessage.msg')).read_text()
-typetf2 = get_types_from_msg(tf2_msg, 'tf2_msgs/msg/TFMessage')
-
-typestore.register(typetf2)
-
-def rosbag_to_array(bag_file, topic):
-
-    pts = []
-    drone_pos = []
-    child_frames = []
-    velodyne_rot = np.array([0.0, 0.0, 0.0, 1.0])
-    velodyne_translation = np.array([0.0, 0.0, 0.0])
-    base_link_rot = np.array([0.0, 0.0, 0.0, 1.0])
-    base_link_translation = np.array([0.0, 0.0, 0.0])
-    offset_base_link_rot = np.array([0.0, 0.0, 0.0, 1.0])
-    offset_base_link_translation = np.array([0.0, 0.0, 0.0])
-
-    bag_path = os.path.join(os.path.dirname(__file__), '..', 'rosbag', bag_file + '.bag')
-    
-    with Reader(bag_path) as reader:
-        for connection, timestamp, rawdata in tqdm(reader.messages()):
-            if connection.topic == '/tf':
-                msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
-                for transform in msg.transforms:
-                    # print(transform.child_frame_id)
-                    # if transform.child_frame_id not in child_frames:
-                    #     print(transform.header)
-                    #     print(transform.child_frame_id)
-                    #     child_frames.append(transform.child_frame_id)
-                    pass
-                    if transform.child_frame_id == 'base_link':
-                        base_link_rot = quaternion_rotation_matrix(np.array([transform.transform.rotation.w, transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z]))
-                        base_link_translation = np.array([transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z])
-
-                    if transform.child_frame_id == 'offset_base_link':
-                        drone_pos.append([transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z])
-                        offset_base_link_rot = quaternion_rotation_matrix(np.array([transform.transform.rotation.w, transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z]))
-                        offset_base_link_translation = np.array([transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z])
-
-                    if transform.child_frame_id == 'velodyne':
-                        velodyne_rot = quaternion_rotation_matrix(np.array([transform.transform.rotation.w, transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z]))
-                        velodyne_translation = np.array([transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z])
-
-
-                        
-            if connection.topic == topic:
-                msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
-                # print(msg.header.frame_id)
-                
-                # reshape the data to a 2D array of shape (point_step, width)
-                data = msg.data.reshape(msg.width, msg.point_step)[:, 0:12]
-                
-                # Ensure the array is C-contiguous
-                data = np.ascontiguousarray(data)
-                
-                # reshape the data from 12 bytes to 3 floats
-                data = data.view(np.float32).reshape(msg.width, 3)
-                            
-                if msg.header.frame_id == 'velodyne':
-                    data = data @ velodyne_rot.T + velodyne_translation
-                    data = data @ base_link_rot.T + base_link_translation
-                    data = data @ offset_base_link_rot.T + offset_base_link_translation
-
-                pts.append(data.T)
-
-
-    return pts, np.array(drone_pos)
-
-
-# def euler_from_quaternion(x, y, z, w):
-#     """
-#     Convert a quaternion into euler angles (roll, pitch, yaw)
-#     roll is rotation around x in radians (counterclockwise)
-#     pitch is rotation around y in radians (counterclockwise)
-#     yaw is rotation around z in radians (counterclockwise)
-#     """
-#     t0 = +2.0 * (w * x + y * z)
-#     t1 = +1.0 - 2.0 * (x * x + y * y)
-#     roll_x = math.atan2(t0, t1)
-    
-#     t2 = +2.0 * (w * y - z * x)
-#     t2 = +1.0 if t2 > +1.0 else t2
-#     t2 = -1.0 if t2 < -1.0 else t2
-#     pitch_y = math.asin(t2)
-    
-#     t3 = +2.0 * (w * z + x * y)
-#     t4 = +1.0 - 2.0 * (y * y + z * z)
-#     yaw_z = math.atan2(t3, t4)
-    
-#     return roll_x, pitch_y, yaw_z # in radians
-
-# def quat_mul(quaternion1, quaternion0):
-#     w0, x0, y0, z0 = quaternion0
-#     w1, x1, y1, z1 = quaternion1
-#     return np.array([-x1*x0 - y1*y0 - z1*z0 + w1*w0,
-#                         x1*w0 + y1*z0 - z1*y0 + w1*x0,
-#                         -x1*z0 + y1*w0 + z1*x0 + w1*y0,
-#                         x1*y0 - y1*x0 + z1*w0 + w1*z0], dtype=np.float64)
-# def inv_quat(quat):
-#     return np.array([quat[0], -quat[1], -quat[2], -quat[3]])
-
-def quaternion_rotation_matrix(Q):
-    """
-    Covert a quaternion into a full three-dimensional rotation matrix.
- 
-    Input
-    :param Q: A 4 element array representing the quaternion (q0,q1,q2,q3) 
- 
-    Output
-    :return: A 3x3 element matrix representing the full 3D rotation matrix. 
-             This rotation matrix converts a point in the local reference 
-             frame to a point in the global reference frame.
-    """
-    # Extract the values from Q
-    q0 = Q[0] # w
-    q1 = Q[1] # #
-    q2 = Q[2] # y
-    q3 = Q[3] # z
-     
-    # First row of the rotation matrix
-    r00 = 2 * (q0 * q0 + q1 * q1) - 1
-    r01 = 2 * (q1 * q2 - q0 * q3)
-    r02 = 2 * (q1 * q3 + q0 * q2)
-     
-    # Second row of the rotation matrix
-    r10 = 2 * (q1 * q2 + q0 * q3)
-    r11 = 2 * (q0 * q0 + q2 * q2) - 1
-    r12 = 2 * (q2 * q3 - q0 * q1)
-     
-    # Third row of the rotation matrix
-    r20 = 2 * (q1 * q3 - q0 * q2)
-    r21 = 2 * (q2 * q3 + q0 * q1)
-    r22 = 2 * (q0 * q0 + q3 * q3) - 1
-     
-    # 3x3 rotation matrix
-    rot_matrix = np.array([[r00, r01, r02],
-                           [r10, r11, r12],
-                           [r20, r21, r22]])
-                            
-    return rot_matrix
-
 
 
 
@@ -2060,12 +1905,11 @@ def quaternion_rotation_matrix(Q):
 if __name__ == "__main__":     
     """ MAIN TEST """
 
-    bagname = 'scenario_failsafe_long_approach'
+    bagname = 'ligne120kv_test1'
 
     fig = plt.figure(figsize=(14, 10))
     ax = plt.axes(projection='3d')
-    line_pts, drone_pos = rosbag_to_array(bagname, '/filtered_cloud_points')
-    velodyne_pts, _ = rosbag_to_array(bagname, '/velodyne_points')
+    
 
     # # go through all the points and plot them in 3D and update the plot for each frame
     # for i in range(len(velodyne_pts)):
@@ -2075,35 +1919,36 @@ if __name__ == "__main__":
 
 ### ajouter des scripts par bag avec les bons paramètres
 
-    print(len(line_pts))
-    print(line_pts[0].shape)
-    print(len(drone_pos))
-    print(drone_pos[0].shape)
-    print(len(velodyne_pts))
-    print(velodyne_pts[0].shape)
+    # max length of the line_pts last dimension
 
-    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
-    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
 
-    # model = ArrayModel222() 
-    model = ArrayModel()
+    line_pts = np.load(('rosbag/' + bagname + '/filtered_cloud_points.npy'))
+    drone_pos = np.load(('rosbag/' + bagname + '/drone_pose.npy'))
+    velodyne_pts = np.load(('rosbag/' + bagname + '/velodyne_points.npy'))
+    timestamps = np.load(('rosbag/' + bagname + '/timestamps.npy'), allow_pickle=True)
+
+    param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6., 7.8, 7.5 ])
+    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
+
+    model = ArrayModel222() 
+    # model = ArrayModel()
     estimator = ArrayEstimator(model, param_powerline)
 
-    # estimator.Q = 1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
-    # estimator.l = 1.0
-    # estimator.power = 2.0
-    # estimator.n_search = 2
-    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
-    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
-
-    estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
+    estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
     estimator.power = 2.0
     estimator.n_search = 2
-    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
-    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
+    estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7., 9., 9.])
+    estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 5., 6., 6.])
 
-    estimator.p_var[0:3] = 5.0
+    # estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
+    # estimator.l = 1.0
+    # estimator.power = 2.0
+    # estimator.n_search = 2
+    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
+    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
+
+    estimator.p_var[0:3] = 25.0
     estimator.p_var[3]   = 5.0
     estimator.p_var[4]   = 500.0
     estimator.p_var[5:]  = 5.5
@@ -2114,6 +1959,7 @@ if __name__ == "__main__":
 
     for pt_id in range(len(line_pts)):
         pt = line_pts[pt_id]
+        pt = pt[:, ~np.isnan(pt[0])]
         param_powerline = estimator.solve_with_search(pt, param_powerline)
         # pts_hat = model.p2r_w(param_powerline, 0, -100, 100)[1]
         pts_hat = model.p2r_w(param_powerline, 50, -50, 100)[1]
@@ -2129,10 +1975,12 @@ if __name__ == "__main__":
         ax.set_xlim([-50, 50])
         ax.set_ylim([-50, 50])
         ax.set_zlim([0, 50])
+
+        # add timestamp to the plot
+        ax.text2D(0.05, 0.95, str(timestamps[pt_id]), transform=ax.transAxes)
         
         plt.pause(0.05)
-        # save plot images as gif
-        # plt.savefig('figures/test' + str(pt_id) + '.png')
+        
 
         save_gif = False
         if save_gif:
