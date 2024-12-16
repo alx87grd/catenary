@@ -1,0 +1,26 @@
+name: dev-catenary
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - spyder
+  - pyqt
+  - scikit-learn
+  - jupyter
+  - ipython
+  - ipykernel
+  - pytorch
+  - gymnasium
+  - stable-baselines3
+  - casadi
+  - pygame
+  - meshcat-python
+  - tqdm
+  - pip:
+    - rosbags
+
+
