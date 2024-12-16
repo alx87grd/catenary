@@ -5,9 +5,14 @@ channels:
 dependencies:
   - numpy
   - scipy
+  - pandas
   - matplotlib
+  - spyder
+  - pyqt
+  - scikit-learn
   - jupyter
   - ipython
+  - ipykernel
   - pytorch
   - gymnasium
   - stable-baselines3
@@ -15,6 +20,7 @@ dependencies:
   - pygame
   - meshcat-python
   - tqdm
-  - rosbags
+  - pip:
+    - rosbags
 
 
