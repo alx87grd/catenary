@@ -44,9 +44,12 @@ def rosbagEvaluation(
         s=50,
         marker="*",
     )
+
+    # Projected powerline points
     for i in range(pts_hat.shape[2]):
         ax.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
 
+    # Raw velodyne points
     ax.scatter3D(
         velodyne_pts[pt_id][0],
         velodyne_pts[pt_id][1],
@@ -55,6 +58,7 @@ def rosbagEvaluation(
         alpha=1,
         s=1,
     )
+
     # Set fixed scale
     ax.set_xlim([-50, 50])
     ax.set_ylim([-50, 50])
@@ -339,7 +343,7 @@ if __name__ == "__main__":
     # test_lidar_pts()
     # no_regulation()
 
-    # test2_baseline()
+    test2_baseline()
     # test2_lidar_bad()
     # test2_lidar_good()
 
