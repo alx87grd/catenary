@@ -1,0 +1,13 @@
+name: dev-catenary
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - scipy
+  - matplotlib
+  - tqdm
+  - pip:
+    - rosbags
+
+
