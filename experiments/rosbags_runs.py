@@ -340,10 +340,10 @@ if __name__ == "__main__":
     """MAIN TEST"""
 
     test_baseline()
-    # test_lidar_pts()
+
     # no_regulation()
 
-    test2_baseline()
+    # test2_baseline()
     # test2_lidar_bad()
     # test2_lidar_good()
 

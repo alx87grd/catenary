@@ -34,12 +34,9 @@ except:
 
 import time
 from scipy.optimize import minimize
-import sys
-import os
-import math
 
-import io
-from PIL import Image
+# import io
+# from PIL import Image
 
 ###########################
 # catenary function
@@ -1943,8 +1940,6 @@ def ArrayModelEstimatorTest(
     x_min_s=-200,
     x_max_s=+200,
     use_grad=True,
-    rosbag=False,
-    rosfile="ligne315kv_test2",  # inside rosbag folder
 ):
 
     estimator = ArrayEstimator(model, p_hat)
@@ -1965,19 +1960,12 @@ def ArrayModelEstimatorTest(
     estimator.n_sample = n_s
     estimator.d_th = w_l * 5.0
 
-    if rosbag:
-        rosbag_pts = rosbag_to_array(rosfile, "/filtered_cloud_points")
-        n_steps = len(rosbag_pts)
-        n_steps = 100
-
     for j in range(n_run):
 
         print("Run no", j)
 
         # Random true line position
-        p_hat = np.random.uniform(p_lb, p_ub)
-        # p_true  = np.random.uniform( p_lb , p_ub )
-        p_true = np.zeros_like(p_lb)
+        p_true = np.random.uniform(p_lb, p_ub)
 
         if plot:
             plot_3d = EstimationPlot(
@@ -1997,16 +1985,10 @@ def ArrayModelEstimatorTest(
 
         for i in range(n_steps):
 
-            if rosbag:
-                pts = rosbag_pts[i]
-
-            else:
-                # Generate fake noisy data
-                pts = model.generate_test_data(
-                    p_true, n_obs, x_min, x_max, w_l, n_out, center, w_o, partial_obs
-                )
-
-            # print(pts.shape)
+            # Generate fake noisy data
+            pts = model.generate_test_data(
+                p_true, n_obs, x_min, x_max, w_l, n_out, center, w_o, partial_obs
+            )
 
             if plot:
                 plot_3d.update_pts(pts)
@@ -2053,116 +2035,4 @@ def ArrayModelEstimatorTest(
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    bagname = "ligne120kv_test1"
-
-    fig = plt.figure(figsize=(14, 10))
-    ax = plt.axes(projection="3d")
-
-    # # go through all the points and plot them in 3D and update the plot for each frame
-    # for i in range(len(velodyne_pts)):
-    #     ax.clear()
-    #     ax.scatter3D(velodyne_pts[i][0], velodyne_pts[i][1], velodyne_pts[i][2], cmap='Greens')
-    #     plt.pause(0.1)
-
-    ### ajouter des scripts par bag avec les bons paramètres
-
-    # max length of the line_pts last dimension
-
-    line_pts = np.load(("rosbag/" + bagname + "/filtered_cloud_points.npy"))
-    drone_pos = np.load(("rosbag/" + bagname + "/drone_pose.npy"))
-    velodyne_pts = np.load(("rosbag/" + bagname + "/velodyne_points.npy"))
-    timestamps = np.load(("rosbag/" + bagname + "/timestamps.npy"), allow_pickle=True)
-
-    param_powerline = np.array([-30.0, 50.0, 11.0, 2.3, 500, 6.0, 7.8, 7.5])
-    # param_powerline = np.array([  -30.,  50., 11., 2.3, 500, 6. ])
-
-    model = ArrayModel222()
-    # model = ArrayModel()
-    estimator = ArrayEstimator(model, param_powerline)
-
-    estimator.Q = 0.1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
-    estimator.l = 1.0
-    estimator.power = 2.0
-    estimator.n_search = 2
-    estimator.p_ub = np.array([200.0, 200.0, 25.0, 3.14, 500.0, 7.0, 9.0, 9.0])
-    estimator.p_lb = np.array([-200.0, -200.0, 0.0, 0.0, 5.0, 5.0, 6.0, 6.0])
-
-    # estimator.Q = 0.1*np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02])
-    # estimator.l = 1.0
-    # estimator.power = 2.0
-    # estimator.n_search = 2
-    # estimator.p_ub = np.array([ 200.,  200., 25.,  3.14, 500., 7.])
-    # estimator.p_lb = np.array([-200., -200.,  0., 0.0,  5., 4.])
-
-    estimator.p_var[0:3] = 25.0
-    estimator.p_var[3] = 5.0
-    estimator.p_var[4] = 500.0
-    estimator.p_var[5:] = 5.5
-
-    last_time = time.time()
-
-    images = []
-
-    for pt_id in range(len(line_pts)):
-        pt = line_pts[pt_id]
-        pt = pt[:, ~np.isnan(pt[0])]
-        param_powerline = estimator.solve_with_search(pt, param_powerline)
-        # pts_hat = model.p2r_w(param_powerline, 0, -100, 100)[1]
-        pts_hat = model.p2r_w(param_powerline, 50, -50, 100)[1]
-        # print(param_powerline)
-        ax.clear()
-        ax.scatter3D(
-            velodyne_pts[pt_id][0],
-            velodyne_pts[pt_id][1],
-            velodyne_pts[pt_id][2],
-            color="red",
-            alpha=1,
-            s=1,
-        )
-        ax.scatter3D(pt[0], pt[1], pt[2], color="green", alpha=0.5)
-        ax.scatter3D(
-            drone_pos[pt_id][0],
-            drone_pos[pt_id][1],
-            drone_pos[pt_id][2],
-            color="blue",
-            s=50,
-            marker="*",
-        )
-        for i in range(pts_hat.shape[2]):
-            ax.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
-
-        # Set fixed scale
-        ax.set_xlim([-50, 50])
-        ax.set_ylim([-50, 50])
-        ax.set_zlim([0, 50])
-
-        # add timestamp to the plot
-        ax.text2D(0.05, 0.95, str(timestamps[pt_id]), transform=ax.transAxes)
-
-        plt.pause(0.05)
-
-        save_gif = False
-        if save_gif:
-            if pt_id % 3 == 0:
-                # Create a bytes buffer to save the plot
-                buf = io.BytesIO()
-                plt.savefig(buf, format="png")
-                buf.seek(0)
-
-                # Open the PNG image from the buffer and convert it to a NumPy array
-                image = Image.open(buf)
-                buf.seek(0)
-                images.append(image)
-
-    if save_gif:
-        # save as a gif
-        images[0].save(
-            "figures/" + bagname + ".gif",
-            save_all=True,
-            append_images=images[1:],
-            optimize=False,
-            duration=500,
-            loop=0,
-        )
-        # Close the buffer
-        buf.close()
+    pass
