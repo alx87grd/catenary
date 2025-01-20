@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from catenary import powerline
-
+from catenary import filter
 
 def rosbagEvaluation(
     bagname,
@@ -29,7 +29,7 @@ def rosbagEvaluation(
     # Initial estimation
     pt_id = 0
     if filtered:
-        pt = line_pts[pt_id]
+        pt = filter.filter_cable_points(velodyne_pts[pt_id].T).T
     else:
         pt = velodyne_pts[pt_id]
     pts_hat = estimator.model.p2r_w(param_powerline, points[0], points[1], points[2])[1]
@@ -68,7 +68,7 @@ def rosbagEvaluation(
     for pt_id in range(len(line_pts)):
 
         if filtered:
-            pt = line_pts[pt_id]
+            pt = filter.filter_cable_points(velodyne_pts[pt_id].T).T
         else:
             pt = velodyne_pts[pt_id]
 
