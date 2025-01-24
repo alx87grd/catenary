@@ -817,6 +817,21 @@ class ArrayModel222(ArrayModel):
         return grad
 
 
+# Model factory
+def create_array_model(model_name: str) -> ArrayModel:
+    if model_name == '222':
+        return ArrayModel222()
+    elif model_name == '32':
+        return ArrayModel32()
+    elif model_name == '2221':
+        return ArrayModel2221()
+    elif model_name == 'constant2221':
+        return ArrayModelConstant2221()
+    elif model_name == 'quad':
+        return Quad()
+    else:
+        raise ValueError(f"Model {model_name} not recognized.")
+
 # ###########################
 # Optimization
 # ###########################
