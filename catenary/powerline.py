@@ -1310,6 +1310,9 @@ class ArrayEstimator:
         self.p_var[4] = 200.0
         self.p_var[5:] = 0.5
 
+        # initialize random number generator with seed to have reproductible results
+        self.rng = np.random.default_rng(seed=1)
+
         # grouping param
         self.d_th = 2.0
         self.succes_ratio = 0.8
@@ -1386,8 +1389,7 @@ class ArrayEstimator:
             grad = None
 
         # variation to params
-        rng = np.random.default_rng(seed=None)
-        deltas = self.p_var[:, np.newaxis] * rng.standard_normal(
+        deltas = self.p_var[:, np.newaxis] * self.rng.standard_normal(
             (self.n_p, self.n_search)
         )
 
