@@ -6,6 +6,7 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
+  - prettytable
   - tqdm
   - pip:
     - rosbags
