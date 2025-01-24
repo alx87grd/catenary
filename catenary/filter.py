@@ -34,7 +34,7 @@ def remove_ground_plane(points, distance_threshold=0.01, ransac_n=3, num_iterati
 
     return non_ground_points
 
-def find_clusters_dbscan(points, eps=0.02, min_samples=10)
+def find_clusters_dbscan(points, eps=0.02, min_samples=10):
     """
     Use DBSCAN to cluster points.
 
@@ -165,7 +165,6 @@ def filter_cable_points(points):
 
     # Remove ground plane
     non_ground_points = remove_ground_plane(points, distance_threshold=5.0, ransac_n=5)
-    #non_ground_points = points
 
     # Apply DBSCAN clustering
     labels = find_clusters_dbscan(non_ground_points, eps=1.0, min_samples=3)
