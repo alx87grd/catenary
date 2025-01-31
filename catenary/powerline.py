@@ -236,6 +236,7 @@ class ArrayModel:
         center=[0, 0, 0],
         w_o=100,
         partial_obs=False,
+        seed=None,
     ):
         """
         generate pts for a line and outliers
@@ -258,11 +259,11 @@ class ArrayModel:
                 xm = np.random.randint(x_min, x_max)
                 xp = np.random.randint(x_min, x_max)
 
-                r_line = catenary.noisy_p2r_w(p_line, xm, xp, xn, w_l)
+                r_line = catenary.noisy_p2r_w(p_line, xm, xp, xn, w_l, seed)
 
             else:
 
-                r_line = catenary.noisy_p2r_w(p_line, x_min, x_max, n_obs, w_l)
+                r_line = catenary.noisy_p2r_w(p_line, x_min, x_max, n_obs, w_l, seed)
 
             pts = np.append(pts, r_line, axis=1)
 
