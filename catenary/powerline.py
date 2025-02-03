@@ -236,6 +236,7 @@ class ArrayModel:
         center=[0, 0, 0],
         w_o=100,
         partial_obs=False,
+        seed=None,
     ):
         """
         generate pts for a line and outliers
@@ -258,11 +259,11 @@ class ArrayModel:
                 xm = np.random.randint(x_min, x_max)
                 xp = np.random.randint(x_min, x_max)
 
-                r_line = catenary.noisy_p2r_w(p_line, xm, xp, xn, w_l)
+                r_line = catenary.noisy_p2r_w(p_line, xm, xp, xn, w_l, seed)
 
             else:
 
-                r_line = catenary.noisy_p2r_w(p_line, x_min, x_max, n_obs, w_l)
+                r_line = catenary.noisy_p2r_w(p_line, x_min, x_max, n_obs, w_l, seed)
 
             pts = np.append(pts, r_line, axis=1)
 
@@ -817,6 +818,21 @@ class ArrayModel222(ArrayModel):
         return grad
 
 
+# Model factory
+def create_array_model(model_name: str) -> ArrayModel:
+    if model_name == '222':
+        return ArrayModel222()
+    elif model_name == '32':
+        return ArrayModel32()
+    elif model_name == '2221':
+        return ArrayModel2221()
+    elif model_name == 'constant2221':
+        return ArrayModelConstant2221()
+    elif model_name == 'quad':
+        return Quad()
+    else:
+        raise ValueError(f"Model {model_name} not recognized.")
+
 # ###########################
 # Optimization
 # ###########################
@@ -1295,6 +1311,9 @@ class ArrayEstimator:
         self.p_var[4] = 200.0
         self.p_var[5:] = 0.5
 
+        # initialize random number generator with seed to have reproductible results
+        self.rng = np.random.default_rng(seed=1)
+
         # grouping param
         self.d_th = 2.0
         self.succes_ratio = 0.8
@@ -1371,8 +1390,7 @@ class ArrayEstimator:
             grad = None
 
         # variation to params
-        rng = np.random.default_rng(seed=None)
-        deltas = self.p_var[:, np.newaxis] * rng.standard_normal(
+        deltas = self.p_var[:, np.newaxis] * self.rng.standard_normal(
             (self.n_p, self.n_search)
         )
 

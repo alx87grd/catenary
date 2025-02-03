@@ -634,7 +634,7 @@ def plot_lorentzian(l=10, power=2, b=50.0, ax=None):
 
 
 ############################
-def noisy_p2r_w(p, x_min=-200, x_max=200, n=400, w=0.5):
+def noisy_p2r_w(p, x_min=-200, x_max=200, n=400, w=0.5, seed=None):
     """
     p2r_w but with added gaussian noise of standard deviation w
 
@@ -644,21 +644,21 @@ def noisy_p2r_w(p, x_min=-200, x_max=200, n=400, w=0.5):
     r_line = p2r_w(p, x_min, x_max, n)[0]
 
     # adding measurements noise
-    rng = np.random.default_rng(seed=None)
+    rng = np.random.default_rng(seed=seed)
     r_noisy = r_line + w * rng.standard_normal((3, n))
 
     return r_noisy
 
 
 ############################
-def outliers(n=10, center=[0, 0, 0], w=100):
+def outliers(n=10, center=[0, 0, 0], w=100, seed=None):
     """
     Create random 3D world pts
 
     """
 
     # Outliers randoms points (all pts are initialized as random outliers)
-    rng = np.random.default_rng(seed=None)
+    rng = np.random.default_rng(seed=seed)
     noise = w * rng.standard_normal((3, n))
     pts = np.zeros((3, n))
 
@@ -682,6 +682,7 @@ def generate_test_data(
     n_out=10,
     center=[0, 0, 0],
     w_o=100,
+    seed=None,
 ):
     """
     generate pts for a line and outliers
@@ -694,9 +695,9 @@ def generate_test_data(
         x_min = np.random.randint(x_min, x_max)
         x_max = np.random.randint(x_min, x_max)
 
-    r_line = noisy_p2r_w(p, x_min, x_max, n_obs, w_l)
+    r_line = noisy_p2r_w(p, x_min, x_max, n_obs, w_l, seed)
 
-    r_out = outliers(n_out, center, w_o)
+    r_out = outliers(n_out, center, w_o, seed)
 
     pts = np.append(r_line, r_out, axis=1)
 
