@@ -1,14 +1,18 @@
-name: dev-catenary
+name: dev-catenary-v3
 channels:
   - conda-forge
   - defaults
 dependencies:
+  - python=3.11
+  - pip
   - numpy
   - scipy
   - matplotlib
   - prettytable
   - tqdm
+  - scikit-learn
   - pip:
     - rosbags
+    - open3d
 
 

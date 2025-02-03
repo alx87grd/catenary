@@ -3,12 +3,14 @@ from abc import ABC, abstractmethod
 from catenary import powerline
 
 # Change this for your own path
-DATASET_PATH="/home/cm9599/git/alexandre/data/"
+DATASET_PATH = "/Users/agirard/data/catenary/"
+
 
 class Dataset(ABC):
     """
     Interface class to define a dataset.
     """
+
     @abstractmethod
     def frame_count(self) -> int:
         """
@@ -71,10 +73,12 @@ class Dataset(ABC):
         """
         pass
 
+
 class SimulatedDataset(Dataset):
     """
     Class to generate a simulated dataset.
     """
+
     def __init__(self, name, n_out=0):
         # Validate that name has format sim_[model_name]
         if not name.startswith("sim_"):
@@ -105,7 +109,18 @@ class SimulatedDataset(Dataset):
             p_ub = np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0])
 
             # Use same ground thruth as experimental data
-            self._ground_truth = np.array([-22.61445006, 42.86768157, 14.25202579, 2.31972922, 698.6378392, 5.83313134, 7.68165757, 7.28652209])
+            self._ground_truth = np.array(
+                [
+                    -22.61445006,
+                    42.86768157,
+                    14.25202579,
+                    2.31972922,
+                    698.6378392,
+                    5.83313134,
+                    7.68165757,
+                    7.28652209,
+                ]
+            )
 
             x_min = -20
             x_max = 20
@@ -117,13 +132,25 @@ class SimulatedDataset(Dataset):
             n_lines = self.model.q
 
             # Initialize numpy array to store all points
-            self._lidar_points = np.empty((n_frames, 3, n_obs*n_lines+self.n_out), dtype=float)
+            self._lidar_points = np.empty(
+                (n_frames, 3, n_obs * n_lines + self.n_out), dtype=float
+            )
 
             for frame_idx in range(n_frames):
                 # Use a different seed at each frame to randomize noise
                 seed = frame_idx
                 self._lidar_points[frame_idx] = self.model.generate_test_data(
-                    self._ground_truth, n_obs, x_min, x_max, w_l, self.n_out, center, w_o, partial_obs, seed)
+                    self._ground_truth,
+                    n_obs,
+                    x_min,
+                    x_max,
+                    w_l,
+                    self.n_out,
+                    center,
+                    w_o,
+                    partial_obs,
+                    seed,
+                )
         else:
             raise ValueError("Model simulation not implemented")
 
@@ -146,20 +173,35 @@ class SimulatedDataset(Dataset):
         # For now return the same ground truth for all frames
         return self._ground_truth
 
+
 class ExperimentalDataset(Dataset):
     """
     Class to load experimental datasets.
     """
+
     def __init__(self, name):
         self.name = name
         self._bagfolder = DATASET_PATH + name
         self._lidar_points = np.load(self._bagfolder + "/velodyne_points.npy")
-        self._filtered_lidar_points = np.load(self._bagfolder + "/filtered_cloud_points.npy")
+        self._filtered_lidar_points = np.load(
+            self._bagfolder + "/filtered_cloud_points.npy"
+        )
 
         # TODO: Create a function to find the ground thruth in each dataset and
         # store the result in a numpy array
-        if name == 'ligne315kv_test1':
-            self._ground_truth = np.array([-22.61445006, 42.86768157, 14.25202579, 2.31972922, 698.6378392, 5.83313134, 7.68165757, 7.28652209])
+        if name == "ligne315kv_test1":
+            self._ground_truth = np.array(
+                [
+                    -22.61445006,
+                    42.86768157,
+                    14.25202579,
+                    2.31972922,
+                    698.6378392,
+                    5.83313134,
+                    7.68165757,
+                    7.28652209,
+                ]
+            )
         else:
             self._ground_truth = None
 
@@ -179,7 +221,9 @@ class ExperimentalDataset(Dataset):
             raise IndexError("Index out of bounds")
 
         # Remove NaNs
-        return self._filtered_lidar_points[idx][:, ~np.isnan(self._filtered_lidar_points[idx][0])]
+        return self._filtered_lidar_points[idx][
+            :, ~np.isnan(self._filtered_lidar_points[idx][0])
+        ]
 
     def ground_thruth_params(self, idx: int):
         if idx < 0 or idx >= self.frame_count():
@@ -187,6 +231,7 @@ class ExperimentalDataset(Dataset):
 
         # For now return the same ground truth for all frames
         return self._ground_truth
+
 
 def load_dataset(name):
     """
@@ -202,7 +247,13 @@ def load_dataset(name):
     Dataset
         The dataset object.
     """
-    if name in ["ligne120kv_test1", "ligne120kv_test2", "ligne120kv_test3", "ligne120kv_test4", "ligne315kv_test1"]:
+    if name in [
+        "ligne120kv_test1",
+        "ligne120kv_test2",
+        "ligne120kv_test3",
+        "ligne120kv_test4",
+        "ligne315kv_test1",
+    ]:
         return ExperimentalDataset(name)
     else:
         # TODO: Create simulated dataset
