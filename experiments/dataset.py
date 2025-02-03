@@ -122,9 +122,9 @@ class SimulatedDataset(Dataset):
                 ]
             )
 
-            x_min = -20
-            x_max = 20
-            w_l = 0.5
+            x_min = -5
+            x_max = 5
+            w_l = 0.2
             w_o = 50.0
             center = [0, 0, 0]
 

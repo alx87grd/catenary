@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from catenary import powerline
 from catenary import filter
 
+
 def rosbagEvaluation(
     bagname,
     param_powerline,
@@ -339,9 +340,9 @@ def test4():
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    test_baseline()
+    # test_baseline()
 
-    # no_regulation()
+    no_regulation()
 
     # test2_baseline()
     # test2_lidar_bad()

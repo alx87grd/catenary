@@ -790,7 +790,7 @@ if __name__ == "__main__":
     # PartialObsTest( 2 , True , False )
 
     # CrazyOutliers(2 , True , False )
-    # Snowing(2 , True , False )
+    Snowing(2, True, False)
 
     # SearchTests(  2 , True , False )
     # QuadLossTest( 2 , True , False )
@@ -798,7 +798,7 @@ if __name__ == "__main__":
     # Short Tests
     ###############################
     # GlobalConvergenceTest( 12 , False , True )
-    PartialObsTest(12, True, True)
+    # PartialObsTest(12, True, True)
     # RegulationVsNoRegulation( 12 , False, True)
     # SearchTests( 12 , False , True )
     # GradientTests( 12 , False , True )
