@@ -820,18 +820,19 @@ class ArrayModel222(ArrayModel):
 
 # Model factory
 def create_array_model(model_name: str) -> ArrayModel:
-    if model_name == '222':
+    if model_name == "222":
         return ArrayModel222()
-    elif model_name == '32':
+    elif model_name == "32":
         return ArrayModel32()
-    elif model_name == '2221':
+    elif model_name == "2221":
         return ArrayModel2221()
-    elif model_name == 'constant2221':
+    elif model_name == "constant2221":
         return ArrayModelConstant2221()
-    elif model_name == 'quad':
+    elif model_name == "quad":
         return Quad()
     else:
         raise ValueError(f"Model {model_name} not recognized.")
+
 
 # ###########################
 # Optimization
@@ -1315,7 +1316,7 @@ class ArrayEstimator:
         self.rng = np.random.default_rng(seed=1)
 
         # grouping param
-        self.d_th = 2.0
+        self.d_th = 1.0
         self.succes_ratio = 0.8
 
     #####################################################

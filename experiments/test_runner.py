@@ -1,8 +1,11 @@
 from catenary import powerline
 from catenary.filter import remove_ground_plane, filter_cable_points
 from experiments.dataset import load_dataset
+
+
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 
 def print_progress_bar(
@@ -126,6 +129,9 @@ def run_test(params: dict):
         result["num_points_close_model_hat"] = np.zeros((dataset.frame_count()))
         result["J_tru"] = np.zeros((dataset.frame_count()))
         result["J_hat"] = np.zeros((dataset.frame_count()))
+        result["n_in_ratio"] = np.zeros((dataset.frame_count()))
+        result["J_ratio"] = np.zeros((dataset.frame_count()))
+        result["solve_time_per_seach"] = np.zeros((dataset.frame_count()))
         result["num_points_mean_before_filter"] = 0
         result["num_points_mean_after_filter"] = 0
         result["num_points_std_before_filter"] = 0
@@ -172,8 +178,12 @@ def run_test(params: dict):
             # Execute estimator
             if pt_id == 0:
                 p_hat = p_0
-
+            ########################################
+            start_time = time.time()
             p_hat = estimator.solve_with_search(points, p_hat)
+            solve_time = time.time() - start_time
+            solve_time_per_seach = solve_time / estimator.n_search
+            ########################################
 
             # Compute actual cost (no regulation)
             J_param = estimator.get_cost_parameters(m=n_points_after_filter)
@@ -190,9 +200,16 @@ def run_test(params: dict):
             pts_in_tru = estimator.get_array_group(p_tru, points)
             n_in_tru = pts_in_tru.shape[1]
 
+            # Ratio of performance vs. ground truth
+            n_in_ratio = n_in_hat / n_in_tru
+            J_ratio = J_tru / J_hat
+
             # Store result
+            result["solve_time_per_seach"][pt_id] = solve_time_per_seach
             result["num_points_close_model_tru"][pt_id] = n_in_tru
             result["num_points_close_model_hat"][pt_id] = n_in_hat
+            result["n_in_ratio"][pt_id] = n_in_ratio
+            result["J_ratio"][pt_id] = J_ratio
             result["J_tru"][pt_id] = J_tru
             result["J_hat"][pt_id] = J_hat
             result["p_hat"][pt_id] = p_hat
@@ -213,13 +230,35 @@ def run_test(params: dict):
             [res["num_points_after_filter"][-stats_num_frames:] for res in results]
         )
 
+        num_solve_time_per_seach = np.vstack(
+            [res["solve_time_per_seach"][-stats_num_frames:] for res in results]
+        )
+
+        num_n_in_ratio = np.vstack(
+            [res["n_in_ratio"][-stats_num_frames:] for res in results]
+        )
+
+        num_J_ratio = np.vstack([res["J_ratio"][-stats_num_frames:] for res in results])
+
         # Compute statistics on combined results
+
         stats["p_err_mean"] = np.mean(p_err, axis=0)
         stats["p_err_std"] = np.std(p_err, axis=0)
+
         stats["num_points_mean_before_filter"] = np.mean(num_points_before_filter)
-        stats["num_points_mean_after_filter"] = np.mean(num_points_after_filter)
         stats["num_points_std_before_filter"] = np.std(num_points_before_filter)
+
+        stats["num_points_mean_after_filter"] = np.mean(num_points_after_filter)
         stats["num_points_std_after_filter"] = np.std(num_points_after_filter)
+
+        stats["solve_time_per_seach_mean"] = np.mean(num_solve_time_per_seach)
+        stats["solve_time_per_seach_std"] = np.std(num_solve_time_per_seach)
+
+        stats["n_in_ratio_mean"] = np.mean(num_n_in_ratio)
+        stats["n_in_ratio_std"] = np.std(num_n_in_ratio)
+
+        stats["J_ratio_mean"] = np.mean(num_J_ratio)
+        stats["J_ratio_std"] = np.std(num_J_ratio)
 
     return results, stats
 
@@ -295,16 +334,19 @@ def plot_results(params, results):
             ax1.set_ylim([-50, 50])
             ax1.set_zlim([0, 50])
 
+            n_in_tru = result["num_points_close_model_tru"][idx]
+            J_tru = result["J_tru"][idx]
+            n_in_hat = result["num_points_close_model_hat"][idx]
+            J_hat = result["J_hat"][idx]
+            dt = result["solve_time_per_seach"][idx]
+
             # Display test name with run number on graph
             ax1.text2D(
                 0.05,
                 0.95,
-                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}",
+                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}",
                 transform=ax1.transAxes,
             )
-
-            n_in_tru = result["num_points_close_model_tru"][idx]
-            J_tru = result["J_tru"][idx]
 
             ax1.text2D(
                 0.05,
@@ -312,9 +354,6 @@ def plot_results(params, results):
                 f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}",
                 transform=ax1.transAxes,
             )
-
-            n_in_hat = result["num_points_close_model_hat"][idx]
-            J_hat = result["J_hat"][idx]
 
             ax1.text2D(
                 0.05,

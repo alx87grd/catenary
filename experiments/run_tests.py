@@ -6,10 +6,17 @@ from prettytable import PrettyTable
 
 def table_init():
     table = PrettyTable()
+    # table.field_names = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg"]
     table.field_names = [
         "Test name",
-        "Average num. points",
-        "Vertex point mean error +/- std dev (x,y,z) [m]",
+        "num. points",
+        "Solve time [ms]",
+        "on-model point ratio [%]",
+        "cost-function ratio [%]",
+        "Translation error [m]",
+        "orientation error [rad]",
+        "sag error [m]",
+        "offsets error [m]",
     ]
     return table
 
@@ -19,8 +26,15 @@ def table_add_row(table, params, stats):
         [
             params["name"],
             f'{stats["num_points_mean_after_filter"]:.0f} +/- {stats["num_points_std_after_filter"]:.0f}',
-            f'({stats["p_err_mean"][0]:.2f}, {stats["p_err_mean"][1]:.2f}, {stats["p_err_mean"][2]:.2f}) +/- '
-            + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
+            f'{stats["solve_time_per_seach_mean"]*1000:.2f} +/- {stats["solve_time_per_seach_std"]*1000:.2f}',
+            f'{stats["n_in_ratio_mean"]*100:.1f}% +/- {stats["n_in_ratio_std"]*100:.1f}',
+            f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
+            f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][3], precision=2)} +/- {np.array2string(stats["p_err_std"][3], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][4], precision=2)} +/- {np.array2string(stats["p_err_std"][4], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][5:], precision=2)} +/- {np.array2string(stats["p_err_std"][5:], precision=2)}',
+            #     f'({stats["p_err_mean"][0]:.2f}, {stats["p_err_mean"][1]:.2f}, {stats["p_err_mean"][2]:.2f}) +/- '
+            #     + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
         ]
     )
 
@@ -49,7 +63,7 @@ def run_simulated_tests(table, plot=False):
     }
 
     # Number of outliers to simulate
-    num_outliers_scenarios = [1, 10]
+    num_outliers_scenarios = [10, 100, 500, 1000]
 
     for num_outliers in num_outliers_scenarios:
         params = sim222_params.copy()
@@ -85,7 +99,7 @@ def run_experimental_tests(table, plot=False):
     # Available methods: none, ground_filter, clustering and corridor
     # filter_methods = ["ground_filter", "clustering", "corridor"]
 
-    filter_methods = ["corridor"]
+    filter_methods = ["corridor", "ground_filter", "clustering", "None"]
 
     for filter_method in filter_methods:
         params = exp_315kv_test1_params.copy()
@@ -100,6 +114,7 @@ def run_experimental_tests(table, plot=False):
 if __name__ == "__main__":
     table = table_init()
     plot = True  # plotting result will take more much time
-    run_experimental_tests(table, plot=True)
-    # run_simulated_tests(table)
+    run_simulated_tests(table, plot=False)
+    run_experimental_tests(table, plot=False)
+
     print(table)
