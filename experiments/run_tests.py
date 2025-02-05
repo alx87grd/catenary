@@ -85,7 +85,7 @@ def run_experimental_tests(table, plot=False):
     # Available methods: none, ground_filter, clustering and corridor
     # filter_methods = ["ground_filter", "clustering", "corridor"]
 
-    filter_methods = ["None", "corridor"]
+    filter_methods = ["corridor"]
 
     for filter_method in filter_methods:
         params = exp_315kv_test1_params.copy()
@@ -99,7 +99,7 @@ def run_experimental_tests(table, plot=False):
 
 if __name__ == "__main__":
     table = table_init()
-    plot = False  # plotting result will take more much time
-    run_experimental_tests(table)
-    run_simulated_tests(table)
+    plot = True  # plotting result will take more much time
+    run_experimental_tests(table, plot=True)
+    # run_simulated_tests(table)
     print(table)
