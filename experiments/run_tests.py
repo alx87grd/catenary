@@ -83,7 +83,9 @@ def run_experimental_tests(table, plot=False):
 
     # Filtering methods to tests
     # Available methods: none, ground_filter, clustering and corridor
-    filter_methods = ["ground_filter", "clustering", "corridor"]
+    # filter_methods = ["ground_filter", "clustering", "corridor"]
+
+    filter_methods = ["None", "corridor"]
 
     for filter_method in filter_methods:
         params = exp_315kv_test1_params.copy()

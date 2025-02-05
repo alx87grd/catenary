@@ -122,6 +122,10 @@ def run_test(params: dict):
         result["p_err_std"] = np.zeros((p_0.shape[0]))
         result["num_points_before_filter"] = np.zeros((dataset.frame_count()))
         result["num_points_after_filter"] = np.zeros((dataset.frame_count()))
+        result["num_points_close_model_tru"] = np.zeros((dataset.frame_count()))
+        result["num_points_close_model_hat"] = np.zeros((dataset.frame_count()))
+        result["J_tru"] = np.zeros((dataset.frame_count()))
+        result["J_hat"] = np.zeros((dataset.frame_count()))
         result["num_points_mean_before_filter"] = 0
         result["num_points_mean_after_filter"] = 0
         result["num_points_std_before_filter"] = 0
@@ -171,7 +175,26 @@ def run_test(params: dict):
 
             p_hat = estimator.solve_with_search(points, p_hat)
 
+            # Compute actual cost (no regulation)
+            J_param = estimator.get_cost_parameters(m=n_points_after_filter)
+            J_hat = powerline.J(p_hat, points, p_hat, J_param)
+
+            # Compute ground truth cost (with points in current frame)
+            p_tru = dataset.ground_thruth_params(pt_id)
+            J_tru = powerline.J(p_tru, points, p_tru, J_param)
+
+            # Compute number of points close to the power line model
+            pts_in_hat = estimator.get_array_group(p_hat, points)
+            n_in_hat = pts_in_hat.shape[1]
+
+            pts_in_tru = estimator.get_array_group(p_tru, points)
+            n_in_tru = pts_in_tru.shape[1]
+
             # Store result
+            result["num_points_close_model_tru"][pt_id] = n_in_tru
+            result["num_points_close_model_hat"][pt_id] = n_in_hat
+            result["J_tru"][pt_id] = J_tru
+            result["J_hat"][pt_id] = J_hat
             result["p_hat"][pt_id] = p_hat
             result["p_err"][pt_id] = dataset.ground_thruth_params(pt_id) - p_hat
             result["num_points_before_filter"][pt_id] = n_points_before_filter
@@ -280,13 +303,46 @@ def plot_results(params, results):
                 transform=ax1.transAxes,
             )
 
+            n_in_tru = result["num_points_close_model_tru"][idx]
+            J_tru = result["J_tru"][idx]
+
+            ax1.text2D(
+                0.05,
+                0.90,
+                f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}",
+                transform=ax1.transAxes,
+            )
+
+            n_in_hat = result["num_points_close_model_hat"][idx]
+            J_hat = result["J_hat"][idx]
+
+            ax1.text2D(
+                0.05,
+                0.85,
+                f"HAT n_in: {n_in_hat}, J: {J_hat}, p: {np.array2string(p_hat, precision=2)}",
+                transform=ax1.transAxes,
+            )
+
             plt.pause(0.001)
 
 
 if __name__ == "__main__":
 
-    from experiments.test_runner import run_test, plot_results
+    # from experiments.test_runner import run_test, plot_results
     from experiments.dataset import load_dataset, SimulatedDataset
+
+    # self._ground_truth = np.array(
+    #             [
+    #                 -22.61445006,
+    #                 42.86768157,
+    #                 14.25202579,
+    #                 2.31972922,
+    #                 698.6378392,
+    #                 5.83313134,
+    #                 7.68165757,
+    #                 7.28652209,
+    #             ]
+    #         )
 
     # Test parameters
     params = {
@@ -294,7 +350,7 @@ if __name__ == "__main__":
         "dataset": None,
         "model": "222",
         "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 100.0,
         "power": 2.0,
@@ -303,7 +359,7 @@ if __name__ == "__main__":
         "n_search": 3,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "none",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 1,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "num_outliers": 10,  # Number of outliers to simulate
     }
