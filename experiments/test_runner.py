@@ -340,11 +340,14 @@ def plot_results(params, results):
             J_hat = result["J_hat"][idx]
             dt = result["solve_time_per_seach"][idx]
 
+            n_in_ratio = result["n_in_ratio"][idx]
+            J_ratio = result["J_ratio"][idx]
+
             # Display test name with run number on graph
             ax1.text2D(
                 0.05,
                 0.95,
-                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}",
+                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}",
                 transform=ax1.transAxes,
             )
 
@@ -389,20 +392,21 @@ if __name__ == "__main__":
         "dataset": None,
         "model": "222",
         "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        "Q": 0.5 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 100.0,
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 3,
+        "n_search": 5,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
-        "filter_method": "none",  # No filter, as simulated data is already filtered
+        "filter_method": "corridor",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "num_outliers": 10,  # Number of outliers to simulate
     }
 
-    params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
+    # params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
+    params["dataset"] = load_dataset("ligne315kv_test1")
     results, stats = run_test(params)
     plot_results(params, results)

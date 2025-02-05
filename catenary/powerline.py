@@ -1426,6 +1426,30 @@ class ArrayEstimator:
         return p_hat
 
     #####################################################
+    def solve_with_ransac_search(
+        self, pts, p_init, callback=None, n_iter=10, n_pts=200
+    ):
+
+        # solutions
+        ps = np.zeros((self.n_p, n_iter))
+        ns = np.zeros(n_iter)
+
+        for i in range(n_iter):
+
+            pts_test = pts[:, np.random.randint(pts.shape[1], size=n_pts)]
+
+            p_hat = self.solve_with_search(pts_test, p_init, callback)
+            pts_in = self.get_array_group(p_hat, pts_test)
+
+            ps[:, i] = p_hat
+            ns[i] = pts_in.shape[1]
+
+        # Debug
+        print(ns)
+
+        return ps[:, ns.argmax()]
+
+    #####################################################
     def get_array_group(self, p, pts, xm=-200, xp=+200, n_s=5000):
 
         # generate a list of sample point on the model curve
