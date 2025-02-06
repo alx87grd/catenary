@@ -369,6 +369,76 @@ class ArrayModel32(ArrayModel):
 
 
 ###############################################################################
+
+
+###############################################################################
+class ArrayModel2(ArrayModel):
+    """
+    ArrayModel 2 is a model for 2 catenary with 1 offsets variables
+
+    ----------------------------------------------------------
+
+
+                           0             1
+
+                                  d1
+                            |------------->
+
+    ----------------------------------------------------------
+
+    p      :  6 x 1 array of parameters
+
+        x_0 : x translation of local frame orign in world frame
+        y_0 : y translation of local frame orign in world frame
+        z_0 : z translation of local frame orign in world frame
+        phi : z rotation of local frame basis in in world frame
+        a   : sag parameter
+        d1  : horizontal distance between power lines
+
+    """
+
+    #################################################
+    def __init__(self):
+
+        ArrayModel.__init__(self, l=6, q=2)
+
+    ############################
+    def p2deltas(self, p):
+        """
+        Compute the translation vector of each individual catenary model origin
+        with respect to the model origin in the model frame
+        """
+
+        delta = np.zeros((3, self.q))
+
+        d1 = p[5]
+
+        # Offset in local catenary frame
+
+        delta[1, 1] = +d1  # y offset of cable 2
+
+        return delta
+
+    ############################
+    def deltas_grad(self):
+        """
+        Compute the gradient of deltas with respect to offset parameters
+        """
+
+        grad = np.zeros((3, self.q, (self.l - 5)))
+
+        grad[:, :, 0] = np.array(
+            [
+                [0.0, 0.0],
+                [0.0, +1.0],
+                [0.0, 0.0],
+            ]
+        )
+
+        return grad
+
+
+###############################################################################
 class ArrayModel2221(ArrayModel):
     """
     ArrayModel 32 is a model for 7 catenary with 6 offsets variables
@@ -830,6 +900,8 @@ def create_array_model(model_name: str) -> ArrayModel:
         return ArrayModelConstant2221()
     elif model_name == "quad":
         return Quad()
+    elif model_name == "2":
+        return ArrayModel2()
     else:
         raise ValueError(f"Model {model_name} not recognized.")
 
