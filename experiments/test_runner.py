@@ -368,9 +368,9 @@ def animate_results(params, results):
             plt.pause(0.001)
 
 
-def plot_results(params, results):
+def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test"):
     """
-    Animate test results.
+    Plot performance figure
 
     Parameters
     ----------
@@ -380,97 +380,294 @@ def plot_results(params, results):
         Array of results dictionary.
     """
 
-    # Figure 1 : Plot estimated power line and ground thruth as animation
-    fig1 = plt.figure(1, figsize=(14, 10))
-    ax1 = plt.axes(projection="3d")
-
     dataset = params["dataset"]
     model = powerline.create_array_model(params["model"])
 
-    for result_idx, result in enumerate(results):
-        for idx in range(dataset.frame_count()):
-            ax1.clear()
+    p_tru = dataset.ground_thruth_params(0)
 
-            p_hat = result["p_hat"][idx]
+    n_p = p_tru.shape[0]
+    n_frame = dataset.frame_count()
+    n_run = len(results)
 
-            p_ground_thruth = dataset.ground_thruth_params(idx)
+    if n_run_plot > n_run:
+        n_run_plot = n_run
 
-            # Compute projected power line points using estimated model
-            pts_hat = model.p2r_w(p_hat, x_min=-100, x_max=100, n=200)[1]
+    # Parameter errors
+    PE = np.zeros((n_p, n_frame + 1, n_run))
 
-            # Compute ground thruth line points
-            pts_ground_thruth = model.p2r_w(
-                p_ground_thruth, x_min=-100, x_max=100, n=200
-            )[1]
+    # Time to solve
+    t_solve = np.zeros((n_frame, n_run))
 
-            # Plot raw lidar points
-            ax1.scatter(
-                dataset.lidar_points(idx)[0],
-                dataset.lidar_points(idx)[1],
-                dataset.lidar_points(idx)[2],
-                color="red",
-                alpha=0.5,
-                s=1,
-            )
+    # Number of points close to model
+    pt_in = np.zeros((n_frame, n_run))
 
-            # # Plot filtered lidar points
-            ax1.scatter(
-                result["points"][idx][0],
-                result["points"][idx][1],
-                result["points"][idx][2],
-                color="blue",
-                alpha=1,
-                s=5,
-            )
+    # Number of points close to model vs. ground truth
+    pt_ratio = np.zeros((n_frame, n_run))
 
-            for i in range(pts_hat.shape[2]):
-                ax1.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+    # Cost function
+    cost = np.zeros((n_frame, n_run))
 
-            for i in range(pts_ground_thruth.shape[2]):
-                ax1.plot3D(
-                    pts_ground_thruth[0, :, i],
-                    pts_ground_thruth[1, :, i],
-                    pts_ground_thruth[2, :, i],
-                    "-g",
-                )
+    # Cost function vs. ground truth
+    cost_ratio = np.zeros((n_frame, n_run))
 
-            # Set fixed scale
-            ax1.set_xlim([-50, 50])
-            ax1.set_ylim([-50, 50])
-            ax1.set_zlim([0, 50])
+    # For all runs
+    for run_id, result in enumerate(results):
 
-            n_in_tru = result["num_points_close_model_tru"][idx]
-            J_tru = result["J_tru"][idx]
-            n_in_hat = result["num_points_close_model_hat"][idx]
-            J_hat = result["J_hat"][idx]
-            dt = result["solve_time_per_seach"][idx]
+        # For all frames in the run
+        for frame_id in range(dataset.frame_count()):
 
-            n_in_ratio = result["n_in_ratio"][idx]
-            J_ratio = result["J_ratio"][idx]
+            p_hat = result["p_hat"][frame_id]
+            p_tru = dataset.ground_thruth_params(frame_id)
 
-            # Display test name with run number on graph
-            ax1.text2D(
-                0.05,
-                0.95,
-                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}",
-                transform=ax1.transAxes,
-            )
+            PE[:, frame_id, run_id] = p_tru - p_hat
 
-            ax1.text2D(
-                0.05,
-                0.90,
-                f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}",
-                transform=ax1.transAxes,
-            )
+            t_solve[frame_id, run_id] = result["solve_time_per_seach"][frame_id]
+            pt_in[frame_id, run_id] = result["num_points_close_model_hat"][frame_id]
+            pt_ratio[frame_id, run_id] = result["n_in_ratio"][frame_id]
+            cost[frame_id, run_id] = result["J_hat"][frame_id]
+            cost_ratio[frame_id, run_id] = result["J_ratio"][frame_id]
 
-            ax1.text2D(
-                0.05,
-                0.85,
-                f"HAT n_in: {n_in_hat}, J: {J_hat}, p: {np.array2string(p_hat, precision=2)}",
-                transform=ax1.transAxes,
-            )
+    PE_mean = np.mean(PE, axis=2)
+    PE_std = np.std(PE, axis=2)
+    t_solve_mean = np.mean(t_solve, axis=1)
+    t_solve_std = np.std(t_solve, axis=1)
+    pt_in_mean = np.mean(pt_in, axis=1)
+    pt_in_std = np.std(pt_in, axis=1)
+    pt_ratio_mean = np.mean(pt_ratio, axis=1)
+    pt_ratio_std = np.std(pt_ratio, axis=1)
+    cost_mean = np.mean(cost, axis=1)
+    cost_std = np.std(cost, axis=1)
+    cost_ratio_mean = np.mean(cost_ratio, axis=1)
+    cost_ratio_std = np.std(cost_ratio, axis=1)
 
-            plt.pause(0.001)
+    frame = np.linspace(0, n_frame, n_frame + 1)
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[0, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[0, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[0, :] - PE_std[0, :],
+        PE_mean[0, :] + PE_std[0, :],
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$x_o$[m]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_x_error.pdf")
+
+    ###################################################################
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[1, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[1, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[1, :] - PE_std[1, :],
+        PE_mean[1, :] + PE_std[1, :],
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$y_o$[m]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_y_error.pdf")
+
+    ###################################################################
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[2, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[2, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[2, :] - PE_std[2, :],
+        PE_mean[2, :] + PE_std[2, :],
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$z_o$[m]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_z_error.pdf")
+
+    ###########################################################
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
+        ax.plot(frame, PE[3, :, j], "--k", linewidth=0.25)
+    ax.plot(frame, PE_mean[3, :], "-r")
+    ax.fill_between(
+        frame,
+        PE_mean[3, :] - PE_std[3, :],
+        PE_mean[3, :] + PE_std[3, :],
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$\psi$ [rad]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_orientation_error.pdf")
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
+        ax.plot(frame, PE[4, :, j], "--k", linewidth=0.25)
+    ax.plot(frame, PE_mean[4, :], "-r")
+    ax.fill_between(
+        frame,
+        PE_mean[4, :] - PE_std[4, :],
+        PE_mean[4, :] + PE_std[4, :],
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$a$[m]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_sag_error.pdf")
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    l_n = PE.shape[0] - 5
+
+    for i in range(l_n):
+        k = 5 + i
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[k, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[k, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[k, :] - PE_std[k, :],
+            PE_mean[k, :] + PE_std[k, :],
+            color="#DDDDDD",
+        )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("$\Delta$[m]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_internaloffsets_error.pdf")
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
+        ax.plot(frame[1:], t_solve[:, j], "--k", linewidth=0.25)
+    ax.plot(frame[1:], t_solve_mean, "-r")
+    ax.fill_between(
+        frame[1:],
+        t_solve_mean - t_solve_std,
+        t_solve_mean + t_solve_std,
+        color="#DDDDDD",
+    )
+
+    # ax.legend( loc = 'upper right' , fontsize = fs)
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("solver time [sec]", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_solver_time.pdf")
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
+        ax.plot(frame[1:], pt_ratio[:, j], "--k", linewidth=0.25)
+    ax.plot(frame[1:], pt_ratio_mean[:], "-r")
+    ax.fill_between(
+        frame[1:],
+        pt_ratio_mean[:] - pt_ratio_std[:],
+        pt_ratio_mean[:] + pt_ratio_std[:],
+        color="#DDDDDD",
+    )
+
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("accuracy (inliers)", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_pt_ratio.pdf")
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
+        ax.plot(frame[1:], cost_ratio[:, j], "--k", linewidth=0.25)
+    ax.plot(frame[1:], cost_ratio_mean[:], "-r")
+    ax.fill_between(
+        frame[1:],
+        cost_ratio_mean[:] - cost_ratio_std[:],
+        cost_ratio_mean[:] + cost_ratio_std[:],
+        color="#DDDDDD",
+    )
+
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("accuracy (cost)", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_cost_ratio.pdf")
 
 
 if __name__ == "__main__":
@@ -513,5 +710,8 @@ if __name__ == "__main__":
 
     params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
     # params["dataset"] = load_dataset("ligne315kv_test1")
+
+    dataset = params["dataset"]
     results, stats = run_test(params)
-    animate_results(params, results)
+    # animate_results(params, results)
+    plot_results(params, results, save=True, n_run_plot=5, name="test")
