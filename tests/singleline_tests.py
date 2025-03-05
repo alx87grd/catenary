@@ -9,7 +9,8 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
-from catenary import singleline as catenary
+from catenary.kinematic import singleline as catenary
+from catenary.estimation import costfunction as cf
 
 
 ###########################
@@ -83,8 +84,8 @@ def gradient_test(method="sample"):
 
     p_nom = p
 
-    grad_analytical = catenary.dJ_dp(p, pts, p_nom, params, False)
-    grad_numerical = catenary.dJ_dp(p, pts, p_nom, params, True)
+    grad_analytical = cf.dJ_dp_single(p, pts, p_nom, params, False)
+    grad_numerical = cf.dJ_dp_single(p, pts, p_nom, params, True)
 
     print("Analytical grad:\n", grad_analytical)
     print("Numerical  grad:\n", grad_numerical)
@@ -127,10 +128,10 @@ def convergence_basic_test(method="sample", grad=False):
 
     start_time = time.time()
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
     if grad:
-        jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+        jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
     else:
         jac = None
 
@@ -211,10 +212,10 @@ def tracking_basic_test(method="sample", grad=False, partial_obs=False):
 
         start_time = time.time()
 
-        func = lambda p: catenary.J(p, pts, p_hat, params)
+        func = lambda p: cf.J_single(p, pts, p_hat, params)
 
         if grad:
-            jac = lambda p: catenary.dJ_dp(p, pts, p_hat, params)
+            jac = lambda p: cf.dJ_dp_single(p, pts, p_hat, params)
         else:
             jac = None
 
@@ -298,8 +299,8 @@ def tracking_advanced_test(method="sample", grad=False, partial_obs=True):
 
         start_time = time.time()
 
-        func = lambda p: catenary.J(p, pts, p_hat, params)
-        grad = lambda p: catenary.dJ_dp(p, pts, p_hat, params)
+        func = lambda p: cf.J_single(p, pts, p_hat, params)
+        grad = lambda p: cf.dJ_dp_single(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -352,8 +353,8 @@ def grouping_test():
 
     start_time = time.time()
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
-    # grad = lambda p: catenary.dJ_dp( p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
+    # grad = lambda p: cf.dJ_dp_single( p, pts, p_init, params)
 
     res = minimize(
         func,
@@ -375,9 +376,7 @@ def grouping_test():
         + f" Hat : {np.array2string(p_hat, precision=2, floatmode='fixed')}  \n"
     )
 
-    pts_in = catenary.get_catanery_group(
-        p_hat, pts, 10.0, n_sample=600, x_min=-30, x_max=30
-    )
+    pts_in = cf.get_catanery_group(p_hat, pts, 10.0, n_sample=600, x_min=-30, x_max=30)
 
     plot.ax.plot(pts_in[0, :], pts_in[1, :], pts_in[2, :], "o", label="Group")
 
@@ -414,10 +413,10 @@ def speed_test():
 
     params = [method, np.diag([0.0, 0.0, 0.0, 0.0, 0.0]), 1000.0, 1.0, 2, 25, -20, 20]
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
     if grad:
-        jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+        jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
     else:
         jac = None
 
@@ -446,10 +445,10 @@ def speed_test():
 
     params = [method, np.diag([0.0, 0.0, 0.0, 0.0, 0.0]), 1000.0, 1.0, 2, 25, -20, 20]
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
     if grad:
-        jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+        jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
     else:
         jac = None
 
@@ -478,10 +477,10 @@ def speed_test():
 
     params = [method, np.diag([0.0, 0.0, 0.0, 0.0, 0.0]), 1000.0, 1.0, 2, 25, -20, 20]
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
     if grad:
-        jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+        jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
     else:
         jac = None
 
@@ -510,10 +509,10 @@ def speed_test():
 
     params = [method, np.diag([0.0, 0.0, 0.0, 0.0, 0.0]), 1000.0, 1.0, 2, 25, -20, 20]
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
     if grad:
-        jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+        jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
     else:
         jac = None
 
@@ -576,9 +575,9 @@ def drake_test():
 
     start_time = time.time()
 
-    func = lambda p: catenary.J(p, pts, p_init, params)
+    func = lambda p: cf.J_single(p, pts, p_init, params)
 
-    jac = lambda p: catenary.dJ_dp(p, pts, p_init, params)
+    jac = lambda p: cf.dJ_dp_single(p, pts, p_init, params)
 
     res = minimize(
         func,
@@ -638,18 +637,18 @@ if __name__ == "__main__":
     print("catenary.p2r_w: ", p2r_w_test())
     print("catenary.noisy_p2r_w: ", noisy_p2r_w_test())
     print("catenary.outliers: ", outliers_test())
-    print("catenary.dJ_dp (samples) : ", gradient_test())
-    print("catenary.dJ_dp (x) : ", gradient_test("x"))
+    print("cf.dJ_dp_single (samples) : ", gradient_test())
+    print("cf.dJ_dp_single (x) : ", gradient_test("x"))
 
-    # convergence_basic_test()
-    # convergence_basic_test( method = 'x' )
-    # convergence_basic_test( grad = True )
+    convergence_basic_test()
+    # convergence_basic_test(method="x")
+    # convergence_basic_test(grad=True)
     # convergence_basic_test(method="x", grad=True)
 
-    # tracking_basic_test(grad=True)
+    tracking_basic_test(grad=True)
 
     # tracking_advanced_test()
 
-    # grouping_test()
+    grouping_test()
 
     speed_test()

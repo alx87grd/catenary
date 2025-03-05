@@ -12,8 +12,313 @@ from scipy.optimize import minimize
 import time
 
 
-from catenary import singleline as catenary
-from catenary import powerline
+from catenary.kinematic import singleline as catenary
+from catenary.kinematic import powerline
+from catenary.estimation import costfunction as cf
+from catenary.estimation.estimator import ArrayEstimator
+
+
+###########################
+
+
+###############################################################################
+class ErrorPlot:
+    """ """
+
+    ############################
+    def __init__(self, p_true, p_hat, n_steps, n_run=1):
+
+        self.n_p = p_true.shape[0]
+        self.n_steps = n_steps
+        self.n_run = n_run
+
+        self.p_true = p_true
+
+        self.PE = np.zeros((self.n_p, n_steps + 1, n_run))
+
+        self.t = np.zeros((n_steps, n_run))
+        self.n_in = np.zeros((n_steps, n_run))
+
+        self.step = 0
+        self.run = 0
+
+        self.PE[:, self.step, self.run] = p_true - p_hat
+
+    ############################
+    def init_new_run(self, p_true, p_hat):
+
+        self.p_true = p_true
+
+        self.step = 0
+        self.run = self.run + 1
+
+        self.PE[:, self.step, self.run] = self.p_true - p_hat
+
+    ############################
+    def save_new_estimation(self, p_hat, t_solve, n_in=0):
+
+        self.t[self.step, self.run] = t_solve
+        self.n_in[self.step, self.run] = n_in
+
+        self.step = self.step + 1
+
+        self.PE[:, self.step, self.run] = self.p_true - p_hat
+
+    ############################
+    def plot_error_all_run(self, fs=10, save=False, name="test"):
+
+        PE = self.PE
+        t = self.t
+
+        frame = np.linspace(0, self.n_steps, self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(self.n_run):
+            ax.plot(frame, PE[0, :, j], "--k")
+            ax.plot(frame, PE[1, :, j], "--r")
+            ax.plot(frame, PE[2, :, j], "--b")
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_translation_error.pdf")
+            # fig.savefig( name + '_translation_error.png')
+            # fig.savefig( name + '_translation_error.jpg')
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(self.n_run):
+            ax.plot(frame, PE[3, :, j])
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\psi$ [rad]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_orientation_error.pdf")
+            # fig.savefig( name + '_orientation_error.png')
+            # fig.savefig( name + '_orientation_error.jpg')
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(self.n_run):
+            ax.plot(frame, PE[4, :, j], "--b")
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_sag_error.pdf")
+            # fig.savefig( name + '_sag_error.png')
+            # fig.savefig( name + '_sag_error.jpg')
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        l_n = PE.shape[0] - 5
+
+        for i in range(l_n):
+            for j in range(self.n_run):
+                ax.plot(frame, PE[5 + i, :, j])
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_internaloffsets_error.pdf")
+            # fig.savefig( name + '_internaloffsets_error.png')
+            # fig.savefig( name + '_internaloffsets_error.jpg')
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(self.n_run):
+            ax.plot(frame[1:], t[:, j])
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("[sec]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_solver_time.pdf")
+            # fig.savefig( name + '_solver_time.png')
+            # fig.savefig( name + '_solver_time.jpg')
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(self.n_run):
+            ax.plot(frame[1:], self.n_in[:, j])
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$n_{in}[\%]$", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_nin.pdf")
+            # fig.savefig( name + '_nin.png')
+            # fig.savefig( name + '_nin.jpg')
+
+    ############################
+    def plot_error_mean_std(self, fs=10, save=False, name="test", n_run_plot=10):
+
+        PE = self.PE
+        t = self.t
+        n_in = self.n_in
+
+        if n_run_plot > self.n_run:
+            n_run_plot = self.n_run
+
+        PE_mean = np.mean(PE, axis=2)
+        PE_std = np.std(PE, axis=2)
+        t_mean = np.mean(t, axis=1)
+        t_std = np.std(t, axis=1)
+        n_mean = np.mean(n_in, axis=1)
+        n_std = np.std(n_in, axis=1)
+
+        frame = np.linspace(0, self.n_steps, self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(
+                frame,
+                (PE[0, :, j] + PE[1, :, j] + PE[3, :, j]) / 3,
+                "--k",
+                linewidth=0.25,
+            )
+
+        ax.plot(frame, (PE_mean[0, :] + PE_mean[1, :] + PE_mean[1, :]) / 3, "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[0, :] - PE_std[0, :],
+            PE_mean[0, :] + PE_std[0, :],
+            color="#DDDDDD",
+        )
+        ax.fill_between(
+            frame,
+            PE_mean[1, :] - PE_std[1, :],
+            PE_mean[1, :] + PE_std[1, :],
+            color="#DDDDDD",
+        )
+        ax.fill_between(
+            frame,
+            PE_mean[2, :] - PE_std[2, :],
+            PE_mean[2, :] + PE_std[2, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$(x_o,y_o,z_o)$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_translation_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[3, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[3, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[3, :] - PE_std[3, :],
+            PE_mean[3, :] + PE_std[3, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\psi$ [rad]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_orientation_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[4, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[4, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[4, :] - PE_std[4, :],
+            PE_mean[4, :] + PE_std[4, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$a$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_sag_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        l_n = PE.shape[0] - 5
+
+        for i in range(l_n):
+            k = 5 + i
+            for j in range(n_run_plot):
+                ax.plot(frame, PE[k, :, j], "--k", linewidth=0.25)
+            ax.plot(frame, PE_mean[k, :], "-r")
+            ax.fill_between(
+                frame,
+                PE_mean[k, :] - PE_std[k, :],
+                PE_mean[k, :] + PE_std[k, :],
+                color="#DDDDDD",
+            )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\Delta$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_internaloffsets_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame[1:], t[:, j], "--k", linewidth=0.25)
+        ax.plot(frame[1:], t_mean, "-r")
+        ax.fill_between(frame[1:], t_mean - t_std, t_mean + t_std, color="#DDDDDD")
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\Delta t$[sec]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_solver_time.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame[1:], n_in[:, j], "--k", linewidth=0.25)
+        ax.plot(frame[1:], n_mean[:], "-r")
+        ax.fill_between(
+            frame[1:], n_mean[:] - n_std[:], n_mean[:] + n_std[:], color="#DDDDDD"
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$n_{in}[\%]$", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_nin.pdf")
 
 
 ###########################
@@ -32,9 +337,9 @@ def basic_array32_estimator_test(n_steps=50):
     pts = model.generate_test_data(p, partial_obs=True)
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.0001, 0.002, 0.002, 0.002]
@@ -83,7 +388,7 @@ def basic_array_constant2221_estimator_test(n=5, var=5.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.000001, 0.002, 0.002, 0.002]
@@ -141,7 +446,7 @@ def hard_array_constant2221_estimator_test(n=2, var=5.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.000001, 0.002, 0.002, 0.002]
@@ -208,7 +513,7 @@ def translation_search_test(search=True, n=3, var=10.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag(
@@ -276,10 +581,10 @@ def hard_test(search=True, method="x", n=2, var=10, n_steps=50):
     pts = pts[:, :30]  # remover one cable
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
     plot.plot_model(p_hat)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 0 * np.diag([0.0002, 0.0002, 0.0, 0.001, 0.0001, 0.002, 0.002, 0.002])
@@ -363,7 +668,7 @@ def very_hard_test(search=True, method="x", n=5, var=100):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag(
@@ -468,7 +773,7 @@ def quad_test(search=True, method="x", n=5, var=10):
 
     callback = None  # plot.update_estimation
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0, 0.001, 0.0001, 0.002, 0.002, 0.002]
@@ -555,9 +860,9 @@ def global_convergence_test(n_steps=100):
     pts = model.generate_test_data(p, partial_obs=True)
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 1.0 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.01, 0.00001, 0.002, 0.002, 0.002]
@@ -616,9 +921,9 @@ def ransac_test(n_steps=100):
     pts = model.generate_test_data(p, partial_obs=True)
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 1.0 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.01, 0.00001, 0.002, 0.002, 0.002]
@@ -672,13 +977,13 @@ def ransac_test(n_steps=100):
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    # basic_array32_estimator_test( 100 )
+    # basic_array32_estimator_test(100)
 
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
 
-    # translation_search_test( False )
-    # translation_search_test(True)
+    translation_search_test(False)
+    translation_search_test(True)
 
     # hard_test( method = 'sample' )
     # hard_test( method = 'x' , n_steps = 100 )
@@ -687,6 +992,6 @@ if __name__ == "__main__":
 
     # quad_test()
 
-    # global_convergence_test()
+    global_convergence_test()
 
-    ransac_test()
+    # ransac_test()

@@ -1,72 +1,18 @@
-from catenary import powerline
-from catenary.filter import remove_ground_plane, filter_cable_points
-from experiments.dataset import load_dataset
-
-
 import matplotlib.pyplot as plt
-import matplotlib
 import numpy as np
 import time
 
-# Use interactive backend
-try:
-    # Default usage for interactive mode
-    matplotlib.use("Qt5Agg")
-    plt.ion()  # Set interactive mode
+from catenary.kinematic import powerline
 
-except:
+from catenary.estimation.filter import filter_cable_points
+from catenary.estimation.estimator import ArrayEstimator
+from catenary.estimation import costfunction
+from catenary.tools import print_progress_bar
 
-    try:
-        # For MacOSX
-        matplotlib.use("MacOSX")
-        plt.ion()
-
-    except:
-
-        print("Warning: Could not load validated backend mode for matplotlib")
-        print(
-            "Matplotlib list of interactive backends:",
-            matplotlib.rcsetup.interactive_bk,
-        )
-        plt.ion()  # Set interactive mode
+from prettytable import PrettyTable
 
 
-def print_progress_bar(
-    iteration,
-    total,
-    prefix="",
-    suffix="",
-    decimals=1,
-    length=100,
-    fill="█",
-    print_end="\r",
-):
-    """
-    Call in a loop to create terminal progress bar.
-
-    Ref: https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
-
-    Parameters
-    ----------
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filled_length = int(length * iteration // total)
-    bar = fill * filled_length + "-" * (length - filled_length)
-    print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=print_end)
-    # Print New Line on Complete
-    if iteration == total:
-        print()
-
-
-def run_test(params: dict):
+def evaluate(params: dict):
     """
     Run a test case.
 
@@ -113,13 +59,11 @@ def run_test(params: dict):
         result = {}
 
         # Randomize initial guess within [p_lb, p_ub] bounds
-        p_0 = rng.uniform(params["p_lb"], params["p_ub"])
-
-        # Use this to disable randomization of initial guess
-        # p_0 = params['p_0']
+        if params["p_0"] is None:
+            p_0 = rng.uniform(params["p_lb"], params["p_ub"])
 
         # Initialize estimator
-        estimator = powerline.ArrayEstimator(model, p_0)
+        estimator = ArrayEstimator(model, p_0)
 
         # Regulation weight matrix
         estimator.Q = params["Q"]
@@ -133,11 +77,17 @@ def run_test(params: dict):
         estimator.p_ub = params["p_ub"]
         estimator.p_lb = params["p_lb"]
 
-        # Search parameters
+        # default cost function parameters
+        estimator.method = params["method"]  # "x"
+        estimator.n_sample = params["n_sample"]
+        estimator.x_min = params["x_min"]
+        estimator.x_max = params["x_max"]
 
+        estimator.use_grad = params["use_grad"]
+
+        # Search parameters
         # Number of search
         estimator.n_search = params["n_search"]
-
         # Parameters std deviation for searching
         estimator.p_var = params["p_var"]
 
@@ -211,11 +161,11 @@ def run_test(params: dict):
 
             # Compute actual cost (no regulation)
             J_param = estimator.get_cost_parameters(m=n_points_after_filter)
-            J_hat = powerline.J(p_hat, points, p_hat, J_param)
+            J_hat = costfunction.J(p_hat, points, p_hat, J_param)
 
             # Compute ground truth cost (with points in current frame)
             p_tru = dataset.ground_thruth_params(pt_id)
-            J_tru = powerline.J(p_tru, points, p_tru, J_param)
+            J_tru = costfunction.J(p_tru, points, p_tru, J_param)
 
             # Compute number of points close to the power line model
             pts_in_hat = estimator.get_array_group(p_hat, points)
@@ -721,52 +671,54 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 plt.pause(0.001)
 
 
+def table_init():
+    table = PrettyTable()
+    # table.field_names = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg"]
+    table.field_names = [
+        "Test name",
+        "num. points",
+        "Solve time [ms]",
+        "on-model point ratio [%]",
+        "cost-function ratio [%]",
+        "Translation error [m]",
+        "orientation error [rad]",
+        "sag error [m]",
+        "offsets error [m]",
+    ]
+    return table
+
+
+def table_add_row(table, params, stats):
+    table.add_row(
+        [
+            params["name"],
+            f'{stats["num_points_mean_after_filter"]:.0f} +/- {stats["num_points_std_after_filter"]:.0f}',
+            f'{stats["solve_time_per_seach_mean"]*1000:.2f} +/- {stats["solve_time_per_seach_std"]*1000:.2f}',
+            f'{stats["n_in_ratio_mean"]*100:.1f}% +/- {stats["n_in_ratio_std"]*100:.1f}',
+            f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
+            f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][3], precision=2)} +/- {np.array2string(stats["p_err_std"][3], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][4], precision=2)} +/- {np.array2string(stats["p_err_std"][4], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][5:], precision=2)} +/- {np.array2string(stats["p_err_std"][5:], precision=2)}',
+            #     f'({stats["p_err_mean"][0]:.2f}, {stats["p_err_mean"][1]:.2f}, {stats["p_err_mean"][2]:.2f}) +/- '
+            #     + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
+        ]
+    )
+
+
+###############################################################
+
 if __name__ == "__main__":
 
-    # from experiments.test_runner import run_test, plot_results
-    from experiments.dataset import load_dataset, SimulatedDataset
+    from catenary.analysis.dataset import load_dataset, SimulatedDataset
 
-    # self._ground_truth = np.array(
-    #             [
-    #                 -22.61445006,
-    #                 42.86768157,
-    #                 14.25202579,
-    #                 2.31972922,
-    #                 698.6378392,
-    #                 5.83313134,
-    #                 7.68165757,
-    #                 7.28652209,
-    #             ]
-    #         )
-
-    # Simulated dataset parameters
-    # n_frames = 100
-    # n_obs = 10
-    # n_out = 10
-    # x_min = -5
-    # x_max = 5
-    # w_l = 0.2
-    # w_o = 50.0
-    # center = [0, 0, 0]
-    # p_tru = np.array(
-    #         [
-    #             -22.61445006,
-    #             42.86768157,
-    #             14.25202579,
-    #             2.31972922,
-    #             698.6378392,
-    #             5.83313134,
-    #             7.68165757,
-    #             7.28652209,
-    #         ]
-    #     )
     datagen_params = {
         "name": "sim_222",
         "n_out": 10,
         "n_frames": 100,
         "n_obs": 10,
-        "x_min": -50,
-        "x_max": 50,
+        "x_min": -5,
+        "x_max": 5,
         "w_l": 0.2,
         "w_o": 50.0,
         "center": [0, 0, 0],
@@ -790,7 +742,7 @@ if __name__ == "__main__":
         "name": "test",
         "dataset": None,
         "model": "222",
-        # "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
+        "p_0": None,  # np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
         "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.00001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 100.0,
@@ -802,13 +754,18 @@ if __name__ == "__main__":
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
+        "method": "x",
+        "n_sample": 201,
+        "x_min": -200,
+        "x_max": 200,
+        "use_grad": True,
     }
 
     dataset = SimulatedDataset(datagen_params)
     # dataset = load_dataset("ligne315kv_test1")
 
     test_params["dataset"] = dataset
-    results, stats = run_test(test_params)
+    results, stats = evaluate(test_params)
 
-    plot_results(test_params, results, save=True, n_run_plot=5, name="test")
+    plot_results(test_params, results, save=True, n_run_plot=5)
     animate_results(test_params, results)

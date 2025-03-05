@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from catenary import powerline
+from catenary.kinematic import powerline
 
 # Change this for your own path
 DATASET_PATH = "/Users/agirard/data/catenary/"
@@ -79,14 +79,16 @@ class SimulatedDataset(Dataset):
     Class to generate a simulated dataset.
 
     dataset_params : dict
-        A dictionary with the following keys
-        name: The name of the dataset
-        n_out: The number of outliers
-        n_frames: The number of frames
-        n_obs: The number of observations per line per frame
-        partial_obs: True if partial observation, False otherwise
-
-
+        n_out = self.params["n_out"]
+        n_frames = self.params["n_frames"]
+        n_obs = self.params["n_obs"]
+        x_min = self.params["x_min"]
+        x_max = self.params["x_max"]
+        w_l = self.params["w_l"]
+        w_o = self.params["w_o"]
+        center = self.params["center"]
+        partial_obs = self.params["partial_obs"]
+        p_tru = self.params["p_tru"]
     """
 
     def __init__(self, params):
