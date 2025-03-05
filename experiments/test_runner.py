@@ -263,9 +263,114 @@ def run_test(params: dict):
     return results, stats
 
 
+def animate_results(params, results):
+    """
+    Animate test results.
+
+    Parameters
+    ----------
+    params: dict
+        Parameters dictionary.
+    results: array
+        Array of results dictionary.
+    """
+
+    # Figure 1 : Plot estimated power line and ground thruth as animation
+    fig1 = plt.figure(1, figsize=(14, 10))
+    ax1 = plt.axes(projection="3d")
+
+    dataset = params["dataset"]
+    model = powerline.create_array_model(params["model"])
+
+    for result_idx, result in enumerate(results):
+        for idx in range(dataset.frame_count()):
+            ax1.clear()
+
+            p_hat = result["p_hat"][idx]
+
+            p_ground_thruth = dataset.ground_thruth_params(idx)
+
+            # Compute projected power line points using estimated model
+            pts_hat = model.p2r_w(p_hat, x_min=-100, x_max=100, n=200)[1]
+
+            # Compute ground thruth line points
+            pts_ground_thruth = model.p2r_w(
+                p_ground_thruth, x_min=-100, x_max=100, n=200
+            )[1]
+
+            # Plot raw lidar points
+            ax1.scatter(
+                dataset.lidar_points(idx)[0],
+                dataset.lidar_points(idx)[1],
+                dataset.lidar_points(idx)[2],
+                color="red",
+                alpha=0.5,
+                s=1,
+            )
+
+            # # Plot filtered lidar points
+            ax1.scatter(
+                result["points"][idx][0],
+                result["points"][idx][1],
+                result["points"][idx][2],
+                color="blue",
+                alpha=1,
+                s=5,
+            )
+
+            for i in range(pts_hat.shape[2]):
+                ax1.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+
+            for i in range(pts_ground_thruth.shape[2]):
+                ax1.plot3D(
+                    pts_ground_thruth[0, :, i],
+                    pts_ground_thruth[1, :, i],
+                    pts_ground_thruth[2, :, i],
+                    "-g",
+                )
+
+            # Set fixed scale
+            ax1.set_xlim([-50, 50])
+            ax1.set_ylim([-50, 50])
+            ax1.set_zlim([0, 50])
+
+            n_in_tru = result["num_points_close_model_tru"][idx]
+            J_tru = result["J_tru"][idx]
+            n_in_hat = result["num_points_close_model_hat"][idx]
+            J_hat = result["J_hat"][idx]
+            dt = result["solve_time_per_seach"][idx]
+
+            n_in_ratio = result["n_in_ratio"][idx]
+            J_ratio = result["J_ratio"][idx]
+
+            # Display test name with run number on graph
+            ax1.text2D(
+                0.05,
+                0.95,
+                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}",
+                transform=ax1.transAxes,
+            )
+
+            ax1.text2D(
+                0.05,
+                0.90,
+                f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}",
+                transform=ax1.transAxes,
+            )
+
+            ax1.text2D(
+                0.05,
+                0.85,
+                f"HAT n_in: {n_in_hat}, J: {J_hat}, p: {np.array2string(p_hat, precision=2)}",
+                transform=ax1.transAxes,
+            )
+
+            plt.pause(0.001)
+
+
 def plot_results(params, results):
     """
-    Plot test results.
+    Animate test results.
 
     Parameters
     ----------
@@ -392,13 +497,13 @@ if __name__ == "__main__":
         "dataset": None,
         "model": "222",
         "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.5 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        "Q": 0.1 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 100.0,
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 5,
+        "n_search": 2,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
@@ -406,7 +511,7 @@ if __name__ == "__main__":
         "num_outliers": 10,  # Number of outliers to simulate
     }
 
-    # params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
-    params["dataset"] = load_dataset("ligne315kv_test1")
+    params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
+    # params["dataset"] = load_dataset("ligne315kv_test1")
     results, stats = run_test(params)
-    plot_results(params, results)
+    animate_results(params, results)
