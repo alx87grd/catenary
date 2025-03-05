@@ -100,7 +100,7 @@ def run_simulated_tests(table, plot=False):
         results, stats = run_test(test_params)
 
         if plot:
-            plot_results(test_params, results)
+            plot_results(test_params, results, save=True)
 
         table_add_row(table, test_params, stats)
 
@@ -111,16 +111,16 @@ def run_experimental_tests(table, plot=False):
         "dataset": load_dataset("ligne315kv_test1"),
         "model": "222",
         "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        "Q": 0.001 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 1000.0,
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 5,
+        "n_search": 3,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "",
-        "num_randomized_tests": 10,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": 3,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
     }
 
@@ -130,7 +130,7 @@ def run_experimental_tests(table, plot=False):
 
     # filter_methods = ["corridor", "ground_filter", "clustering", "None"]
 
-    filter_methods = ["corridor", "ground_filter"]
+    filter_methods = ["corridor"]
 
     for filter_method in filter_methods:
         params = exp_315kv_test1_params.copy()
@@ -138,7 +138,7 @@ def run_experimental_tests(table, plot=False):
         params["name"] = f"315kV Test 1 ({filter_method})"
         results, stats = run_test(params)
         if plot:
-            plot_results(params, results)
+            plot_results(params, results, save=True)
         table_add_row(table, params, stats)
 
 
