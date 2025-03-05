@@ -77,16 +77,26 @@ class Dataset(ABC):
 class SimulatedDataset(Dataset):
     """
     Class to generate a simulated dataset.
+
+    dataset_params : dict
+        A dictionary with the following keys
+        name: The name of the dataset
+        n_out: The number of outliers
+        n_frames: The number of frames
+        n_obs: The number of observations per line per frame
+        partial_obs: True if partial observation, False otherwise
+
+
     """
 
-    def __init__(self, name, n_out=0):
+    def __init__(self, params):
+
+        self.params = params
+        name = params["name"]
+
         # Validate that name has format sim_[model_name]
         if not name.startswith("sim_"):
             raise ValueError("Invalid simulated dataset name")
-        self.name = name
-
-        # number of outliers
-        self.n_out = n_out
 
         self.model_name = name[4:]
         self.model = powerline.create_array_model(self.model_name)
@@ -95,68 +105,65 @@ class SimulatedDataset(Dataset):
 
     def generate_data(self):
 
-        # Number of frames
-        n_frames = 100
+        # n_frames = 100
+        # n_obs = 10
+        # n_out = 10
+        # x_min = -5
+        # x_max = 5
+        # w_l = 0.2
+        # w_o = 50.0
+        # center = [0, 0, 0]
+        # p_tru = np.array(
+        #         [
+        #             -22.61445006,
+        #             42.86768157,
+        #             14.25202579,
+        #             2.31972922,
+        #             698.6378392,
+        #             5.83313134,
+        #             7.68165757,
+        #             7.28652209,
+        #         ]
+        #     )
 
-        # Number of points per line
-        n_obs = 10
+        n_out = self.params["n_out"]
+        n_frames = self.params["n_frames"]
+        n_obs = self.params["n_obs"]
+        x_min = self.params["x_min"]
+        x_max = self.params["x_max"]
+        w_l = self.params["w_l"]
+        w_o = self.params["w_o"]
+        center = self.params["center"]
+        partial_obs = self.params["partial_obs"]
+        p_tru = self.params["p_tru"]
 
-        # Partial observation or not
-        partial_obs = False
+        # Number of lines in model
+        n_lines = self.model.q
 
-        if self.model_name == "222":
-            p_lb = np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0])
-            p_ub = np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0])
+        # Initialize numpy array to store all points
+        self._lidar_points = []
 
-            # Use same ground thruth as experimental data
-            self._ground_truth = np.array(
-                [
-                    -22.61445006,
-                    42.86768157,
-                    14.25202579,
-                    2.31972922,
-                    698.6378392,
-                    5.83313134,
-                    7.68165757,
-                    7.28652209,
-                ]
+        for frame_idx in range(n_frames):
+            # Use a different seed at each frame to randomize noise
+            seed = frame_idx
+            pts = self.model.generate_test_data(
+                p_tru,
+                n_obs,
+                x_min,
+                x_max,
+                w_l,
+                n_out,
+                center,
+                w_o,
+                partial_obs,
+                seed,
             )
 
-            x_min = -5
-            x_max = 5
-            w_l = 0.2
-            w_o = 50.0
-            center = [0, 0, 0]
-
-            # Number of lines in model
-            n_lines = self.model.q
-
-            # Initialize numpy array to store all points
-            self._lidar_points = np.empty(
-                (n_frames, 3, n_obs * n_lines + self.n_out), dtype=float
-            )
-
-            for frame_idx in range(n_frames):
-                # Use a different seed at each frame to randomize noise
-                seed = frame_idx
-                self._lidar_points[frame_idx] = self.model.generate_test_data(
-                    self._ground_truth,
-                    n_obs,
-                    x_min,
-                    x_max,
-                    w_l,
-                    self.n_out,
-                    center,
-                    w_o,
-                    partial_obs,
-                    seed,
-                )
-        else:
-            raise ValueError("Model simulation not implemented")
+            self._lidar_points.append(pts)
 
     def frame_count(self) -> int:
         # Limit to 100 frames to speed up testing
-        return min(self._lidar_points.shape[0], 100)
+        return min(self.params["n_frames"], 100)
 
     def lidar_points(self, idx: int):
         if idx < 0 or idx >= self.frame_count():
@@ -171,7 +178,7 @@ class SimulatedDataset(Dataset):
             raise IndexError("Index out of bounds")
 
         # For now return the same ground truth for all frames
-        return self._ground_truth
+        return self.params["p_tru"]
 
 
 class ExperimentalDataset(Dataset):
@@ -258,3 +265,33 @@ def load_dataset(name):
     else:
         # TODO: Create simulated dataset
         return None
+
+
+if __name__ == "__main__":
+
+    datagen_params = {
+        "name": "sim_222",
+        "n_out": 10,
+        "n_frames": 100,
+        "n_obs": 10,
+        "x_min": -50,
+        "x_max": 50,
+        "w_l": 0.2,
+        "w_o": 50.0,
+        "center": [0, 0, 0],
+        "partial_obs": True,
+        "p_tru": np.array(
+            [
+                -22.61445006,
+                42.86768157,
+                14.25202579,
+                2.31972922,
+                698.6378392,
+                5.83313134,
+                7.68165757,
+                7.28652209,
+            ]
+        ),
+    }
+
+    dataset = SimulatedDataset(datagen_params)

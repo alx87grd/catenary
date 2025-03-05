@@ -4,8 +4,31 @@ from experiments.dataset import load_dataset
 
 
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import time
+
+# Use interactive backend
+try:
+    # Default usage for interactive mode
+    matplotlib.use("Qt5Agg")
+    plt.ion()  # Set interactive mode
+
+except:
+
+    try:
+        # For MacOSX
+        matplotlib.use("MacOSX")
+        plt.ion()
+
+    except:
+
+        print("Warning: Could not load validated backend mode for matplotlib")
+        print(
+            "Matplotlib list of interactive backends:",
+            matplotlib.rcsetup.interactive_bk,
+        )
+        plt.ion()  # Set interactive mode
 
 
 def print_progress_bar(
@@ -119,6 +142,7 @@ def run_test(params: dict):
         estimator.p_var = params["p_var"]
 
         # Initialize p_hat key with an numpy array of dataset.frame_count() elements
+        result["p_0"] = p_0
         result["p_hat"] = np.zeros((dataset.frame_count(), p_0.shape[0]))
         result["p_err"] = np.zeros((dataset.frame_count(), p_0.shape[0]))
         result["p_err_mean"] = np.zeros((p_0.shape[0]))
@@ -276,8 +300,11 @@ def animate_results(params, results):
     """
 
     # Figure 1 : Plot estimated power line and ground thruth as animation
-    fig1 = plt.figure(1, figsize=(14, 10))
-    ax1 = plt.axes(projection="3d")
+    # fig1 = plt.figure(1, figsize=(14, 10))
+    # ax1 = plt.axes(projection="3d")
+
+    fig1 = plt.figure(figsize=(10, 10), dpi=150)
+    ax1 = fig1.add_subplot(projection="3d")
 
     dataset = params["dataset"]
     model = powerline.create_array_model(params["model"])
@@ -367,8 +394,10 @@ def animate_results(params, results):
 
             plt.pause(0.001)
 
+    fig1.show()
 
-def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test"):
+
+def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     """
     Plot performance figure
 
@@ -379,6 +408,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     results: array
         Array of results dictionary.
     """
+
+    name = params["name"]
 
     dataset = params["dataset"]
     model = powerline.create_array_model(params["model"])
@@ -413,13 +444,15 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     # For all runs
     for run_id, result in enumerate(results):
 
+        PE[:, 0, run_id] = p_tru - result["p_0"]  # Initial guess error
+
         # For all frames in the run
         for frame_id in range(dataset.frame_count()):
 
             p_hat = result["p_hat"][frame_id]
             p_tru = dataset.ground_thruth_params(frame_id)
 
-            PE[:, frame_id, run_id] = p_tru - p_hat
+            PE[:, frame_id + 1, run_id] = p_tru - p_hat
 
             t_solve[frame_id, run_id] = result["solve_time_per_seach"][frame_id]
             pt_in[frame_id, run_id] = result["num_points_close_model_hat"][frame_id]
@@ -442,6 +475,7 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
 
     frame = np.linspace(0, n_frame, n_frame + 1)
 
+    ###################################################################
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     # Plot n runs sample
@@ -476,6 +510,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
 
     ###################################################################
 
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
     # Plot n runs sample
     for j in range(n_run_plot):
         ax.plot(
@@ -507,6 +543,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
         fig.savefig(name + "_y_error.pdf")
 
     ###################################################################
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     # Plot n runs sample
     for j in range(n_run_plot):
@@ -562,6 +600,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     if save:
         fig.savefig(name + "_orientation_error.pdf")
 
+    ###########################################################
+
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     for j in range(n_run_plot):
@@ -582,6 +622,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     fig.show()
     if save:
         fig.savefig(name + "_sag_error.pdf")
+
+    ###########################################################
 
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
@@ -608,6 +650,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     if save:
         fig.savefig(name + "_internaloffsets_error.pdf")
 
+    ###########################################################
+
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     for j in range(n_run_plot):
@@ -629,6 +673,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     if save:
         fig.savefig(name + "_solver_time.pdf")
 
+    ###########################################################
+
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     for j in range(n_run_plot):
@@ -648,6 +694,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
     fig.show()
     if save:
         fig.savefig(name + "_pt_ratio.pdf")
+
+    ###########################################################
 
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
@@ -670,6 +718,9 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10, name="test")
         fig.savefig(name + "_cost_ratio.pdf")
 
 
+plt.pause(0.001)
+
+
 if __name__ == "__main__":
 
     # from experiments.test_runner import run_test, plot_results
@@ -688,13 +739,59 @@ if __name__ == "__main__":
     #             ]
     #         )
 
+    # Simulated dataset parameters
+    # n_frames = 100
+    # n_obs = 10
+    # n_out = 10
+    # x_min = -5
+    # x_max = 5
+    # w_l = 0.2
+    # w_o = 50.0
+    # center = [0, 0, 0]
+    # p_tru = np.array(
+    #         [
+    #             -22.61445006,
+    #             42.86768157,
+    #             14.25202579,
+    #             2.31972922,
+    #             698.6378392,
+    #             5.83313134,
+    #             7.68165757,
+    #             7.28652209,
+    #         ]
+    #     )
+    datagen_params = {
+        "name": "sim_222",
+        "n_out": 10,
+        "n_frames": 100,
+        "n_obs": 10,
+        "x_min": -50,
+        "x_max": 50,
+        "w_l": 0.2,
+        "w_o": 50.0,
+        "center": [0, 0, 0],
+        "partial_obs": True,
+        "p_tru": np.array(
+            [
+                -22.61445006,
+                42.86768157,
+                14.25202579,
+                2.31972922,
+                698.6378392,
+                5.83313134,
+                7.68165757,
+                7.28652209,
+            ]
+        ),
+    }
+
     # Test parameters
-    params = {
+    test_params = {
         "name": "test",
         "dataset": None,
         "model": "222",
-        "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.1 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        # "p_0": np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
+        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.00001, 0.02, 0.02, 0.02]),
         "l": 1.0,
         "b": 100.0,
         "power": 2.0,
@@ -705,13 +802,13 @@ if __name__ == "__main__":
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
-        "num_outliers": 10,  # Number of outliers to simulate
     }
 
-    params["dataset"] = SimulatedDataset("sim_222", params["num_outliers"])
-    # params["dataset"] = load_dataset("ligne315kv_test1")
+    dataset = SimulatedDataset(datagen_params)
+    # dataset = load_dataset("ligne315kv_test1")
 
-    dataset = params["dataset"]
-    results, stats = run_test(params)
-    # animate_results(params, results)
-    plot_results(params, results, save=True, n_run_plot=5, name="test")
+    test_params["dataset"] = dataset
+    results, stats = run_test(test_params)
+
+    plot_results(test_params, results, save=True, n_run_plot=5, name="test")
+    animate_results(test_params, results)

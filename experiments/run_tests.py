@@ -40,10 +40,34 @@ def table_add_row(table, params, stats):
 
 
 def run_simulated_tests(table, plot=False):
-    sim222_dataset = SimulatedDataset("sim_222")
+
+    datagen_params = {
+        "name": "sim_222",
+        "n_out": 10,
+        "n_frames": 100,
+        "n_obs": 10,
+        "x_min": -5,
+        "x_max": 5,
+        "w_l": 0.2,
+        "w_o": 50.0,
+        "center": [0, 0, 0],
+        "partial_obs": False,
+        "p_tru": np.array(
+            [
+                -22.61445006,
+                42.86768157,
+                14.25202579,
+                2.31972922,
+                698.6378392,
+                5.83313134,
+                7.68165757,
+                7.28652209,
+            ]
+        ),
+    }
 
     # Test parameters
-    sim222_params = {
+    test_params = {
         "name": "Simulated 222",
         "dataset": None,
         "model": "222",
@@ -59,21 +83,26 @@ def run_simulated_tests(table, plot=False):
         "filter_method": "none",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 10,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
-        "num_outliers": 0,  # Number of outliers to simulate
     }
 
     # Number of outliers to simulate
-    num_outliers_scenarios = [10, 100, 500, 1000]
+    # num_outliers_scenarios = [1, 10, 100, 500, 1000]
+    num_outliers_scenarios = [1, 10, 15]
 
     for num_outliers in num_outliers_scenarios:
-        params = sim222_params.copy()
-        params["name"] = f"Simulated 222 ({num_outliers} outliers)"
-        params["num_outliers"] = num_outliers
-        params["dataset"] = SimulatedDataset("sim_222", num_outliers)
-        results, stats = run_test(params)
+
+        datagen_params["n_out"] = num_outliers
+        dataset = SimulatedDataset(datagen_params)
+
+        test_params["name"] = f"Simulated 222 ({num_outliers} outliers)"
+        test_params["dataset"] = dataset
+
+        results, stats = run_test(test_params)
+
         if plot:
-            plot_results(params, results)
-        table_add_row(table, params, stats)
+            plot_results(test_params, results)
+
+        table_add_row(table, test_params, stats)
 
 
 def run_experimental_tests(table, plot=False):
@@ -99,7 +128,9 @@ def run_experimental_tests(table, plot=False):
     # Available methods: none, ground_filter, clustering and corridor
     # filter_methods = ["ground_filter", "clustering", "corridor"]
 
-    filter_methods = ["corridor", "ground_filter", "clustering", "None"]
+    # filter_methods = ["corridor", "ground_filter", "clustering", "None"]
+
+    filter_methods = ["corridor", "ground_filter"]
 
     for filter_method in filter_methods:
         params = exp_315kv_test1_params.copy()
@@ -114,7 +145,7 @@ def run_experimental_tests(table, plot=False):
 if __name__ == "__main__":
     table = table_init()
     plot = True  # plotting result will take more much time
-    run_simulated_tests(table, plot=False)
-    # run_experimental_tests(table, plot=False)
+    # run_simulated_tests(table, plot=False)
+    run_experimental_tests(table, plot=True)
 
     print(table)
