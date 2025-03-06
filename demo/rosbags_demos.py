@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from catenary import powerline
-from catenary import filter
+from catenary.kinematic import powerline
+from catenary.estimation.estimator import ArrayEstimator
+
+# from catenary import filter
 
 
 def rosbagEvaluation(
@@ -190,7 +192,7 @@ def test_baseline():
     param_powerline = np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 1 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -218,7 +220,7 @@ def no_regulation():
     param_powerline = np.array([-0.0, 0.0, 0.0, 2.0, 700, 6.0, 6.0, 6.0])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 0.0 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -244,7 +246,7 @@ def test2_baseline():
     param_powerline = np.array([-30.0, 50.0, 11.0, 2.3, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -270,7 +272,7 @@ def test2_lidar_bad():
     param_powerline = np.array([-30.0, 50.0, 11.0, 2.3, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -296,7 +298,7 @@ def test2_lidar_good():
     param_powerline = np.array([-0.0, 50.0, 15.0, 1.8, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 0.1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -324,7 +326,7 @@ def test2():
     param_powerline = np.array([-0.0, 50.0, 15.0, 1.8, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 0.1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -352,7 +354,7 @@ def test3():
     param_powerline = np.array([-0.0, 50.0, 15.0, 1.8, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 0.1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -380,7 +382,7 @@ def test4():
     param_powerline = np.array([-0.0, 50.0, 15.0, 1.8, 500, 6.0, 7.8, 7.5])
 
     model = powerline.ArrayModel222()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     estimator.Q = 0.1 * np.diag([0.002, 0.002, 0.002, 0.01, 0.000, 0.02, 0.02, 0.02])
     estimator.l = 1.0
@@ -408,7 +410,7 @@ def approach():
     param_powerline = np.array([0.0, 0.0, 15.0, 2.5, 2000, 6.0, 4, 6])
 
     model = powerline.ArrayModel32()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     # 10,7,8,12,2.3,6000,6,3.5,6
 
@@ -438,7 +440,7 @@ def pylon():
     param_powerline = np.array([0.0, 0.0, 15.0, 2.5, 2000, 6.0, 4, 6])
 
     model = powerline.ArrayModel32()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     # 10,7,8,12,2.3,6000,6,3.5,6
 
@@ -468,7 +470,7 @@ def manual_315():
     param_powerline = np.array([0.0, 0.0, 15.0, 2.5, 2000, 6.0, 4, 6])
 
     model = powerline.ArrayModel32()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     # 10,7,8,12,2.3,6000,6,3.5,6
 
@@ -498,7 +500,7 @@ def full_mission_rtl_bug():
     param_powerline = np.array([20.0, 20.0, 15.0, 2.2, 2000, 6.0])
 
     model = powerline.ArrayModel2()
-    estimator = powerline.ArrayEstimator(model, param_powerline)
+    estimator = ArrayEstimator(model, param_powerline)
 
     # 10,7,8,12,2.3,6000,6,3.5,6
 
@@ -521,7 +523,7 @@ def full_mission_rtl_bug():
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    # test_baseline()
+    test_baseline()
 
     # no_regulation()
 
@@ -538,4 +540,4 @@ if __name__ == "__main__":
     # pylon()
 
     # manual_315()
-    full_mission_rtl_bug()
+    # full_mission_rtl_bug()

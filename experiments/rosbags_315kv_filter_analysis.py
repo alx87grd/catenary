@@ -59,4 +59,4 @@ if __name__ == "__main__":
     # filter_methods = ["corridor", "ground_filter", "clustering", "None"]
     filter_methods = ["corridor"]
 
-    table = run_315kv_filter_analysis(filter_methods, plot=True, debug=False)
+    table = run_315kv_filter_analysis(filter_methods, plot=True, debug=True)

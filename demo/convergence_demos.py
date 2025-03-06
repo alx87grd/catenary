@@ -9,7 +9,8 @@ Created on Wed Nov 29 09:15:46 2023
 
 import numpy as np
 
-from catenary import powerline
+from catenary.kinematic import powerline
+from catenary.analysis import evaluation
 
 
 ###############################################################################
@@ -47,7 +48,7 @@ def GlobalConvergenceTest(n_run=5, plot=False, save=True):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -117,7 +118,7 @@ def GlobalConvergenceBagTest(n_run=5, plot=False, save=True):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -186,7 +187,7 @@ def PartialObsTest(n_run=5, plot=False, save=True):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -256,7 +257,7 @@ def RegulationVsNoRegulation(n_run=5, plot=False, save=True):
     name = "WithoutRegulation"
     Q = 0.00 * np.diag([20.0, 20.0, 20.0, 1000.0, 1.0, 800.0, 200.0, 200.0])
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -327,7 +328,7 @@ def MethodTests(n_run=5, plot=False, save=True):
     name = "MethodSample"
     method = "sample"
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -398,7 +399,7 @@ def GradientTests(n_run=5, plot=False, save=True):
     name = "GradOff"
     use_grad = False
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -469,7 +470,7 @@ def SearchTests(n_run=5, plot=False, save=True):
     name = "no_search"
     n_sea = 1
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -540,7 +541,7 @@ def QuadLossTest(n_run=5, plot=False, save=True):
     name = "QuadLoss"
     l = 0
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -607,7 +608,7 @@ def CrazyOutliers(n_run=1, plot=True, save=False):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -674,7 +675,7 @@ def Snowing(n_run=1, plot=True, save=False):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -741,7 +742,7 @@ def OutliersTest(n_out=10, n_run=5, plot=False, save=True):
     x_max_s = +200
     use_grad = True
 
-    powerline.ArrayModelEstimatorTest(
+    evaluation.ArrayModelEstimatorTest(
         save,
         plot,
         name,
@@ -785,12 +786,12 @@ if __name__ == "__main__":
 
     # Demos
     ###############################
-    # GlobalConvergenceTest(2, True, True)
+    GlobalConvergenceTest(2, True, True)
     # GlobalConvergenceBagTest( 2 , True , False )
-    # PartialObsTest( 2 , True , False )
+    PartialObsTest(2, True, False)
 
-    # CrazyOutliers(2 , True , False )
-    Snowing(2, True, False)
+    # CrazyOutliers(2, True, False)
+    # Snowing(2, True, False)
 
     # SearchTests(  2 , True , False )
     # QuadLossTest( 2 , True , False )

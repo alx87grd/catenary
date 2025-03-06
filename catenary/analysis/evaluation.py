@@ -249,19 +249,93 @@ def animate_results(params, results):
         Array of results dictionary.
     """
 
-    # Figure 1 : Plot estimated power line and ground thruth as animation
-    # fig1 = plt.figure(1, figsize=(14, 10))
-    # ax1 = plt.axes(projection="3d")
+    dataset = params["dataset"]
+    model = powerline.create_array_model(params["model"])
 
-    fig1 = plt.figure(figsize=(10, 10), dpi=150)
-    ax1 = fig1.add_subplot(projection="3d")
+    for result_idx, result in enumerate(results):
+
+        p_hat = result["p_0"]
+        p_tru = dataset.ground_thruth_params(0)
+
+        plot_3d = powerline.EstimationPlot(
+            p_tru, p_hat, None, model.p2r_w, xmin=-200, xmax=200
+        )
+
+        # Display test name with run number on graph
+        text1 = plot_3d.ax.text2D(
+            0.0,
+            1.0,
+            f"Test: ",
+            transform=plot_3d.ax.transAxes,
+            fontsize=4,
+        )
+
+        text2 = plot_3d.ax.text2D(
+            0.0,
+            0.95,
+            f"TRU ",
+            transform=plot_3d.ax.transAxes,
+            fontsize=4,
+        )
+
+        text3 = plot_3d.ax.text2D(
+            0.0,
+            0.9,
+            f"HAT ",
+            transform=plot_3d.ax.transAxes,
+            fontsize=4,
+        )
+
+        for idx in range(dataset.frame_count()):
+
+            p_hat = result["p_hat"][idx]
+            p_ground_thruth = dataset.ground_thruth_params(idx)
+
+            plot_3d.update_estimation(p_hat)
+            plot_3d.update_pts(result["points"][idx])
+
+            n_in_tru = result["num_points_close_model_tru"][idx]
+            J_tru = result["J_tru"][idx]
+            n_in_hat = result["num_points_close_model_hat"][idx]
+            J_hat = result["J_hat"][idx]
+            dt = result["solve_time_per_seach"][idx]
+
+            n_in_ratio = result["n_in_ratio"][idx]
+            J_ratio = result["J_ratio"][idx]
+
+            text1.set_text(
+                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}"
+            )
+            text2.set_text(
+                f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}"
+            )
+            text3.set_text(
+                f"HAT n_in: {n_in_hat}, J: {J_hat}, p: {np.array2string(p_hat, precision=2)}"
+            )
+
+
+def animate_results2(params, results):
+    """
+    Animate test results.
+
+    Parameters
+    ----------
+    params: dict
+        Parameters dictionary.
+    results: array
+        Array of results dictionary.
+    """
+
+    fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
+    ax = fig.add_subplot(projection="3d")
 
     dataset = params["dataset"]
     model = powerline.create_array_model(params["model"])
 
     for result_idx, result in enumerate(results):
+
         for idx in range(dataset.frame_count()):
-            ax1.clear()
+            ax.clear()
 
             p_hat = result["p_hat"][idx]
 
@@ -276,7 +350,7 @@ def animate_results(params, results):
             )[1]
 
             # Plot raw lidar points
-            ax1.scatter(
+            ax.scatter(
                 dataset.lidar_points(idx)[0],
                 dataset.lidar_points(idx)[1],
                 dataset.lidar_points(idx)[2],
@@ -286,7 +360,7 @@ def animate_results(params, results):
             )
 
             # # Plot filtered lidar points
-            ax1.scatter(
+            ax.scatter(
                 result["points"][idx][0],
                 result["points"][idx][1],
                 result["points"][idx][2],
@@ -296,20 +370,20 @@ def animate_results(params, results):
             )
 
             for i in range(pts_hat.shape[2]):
-                ax1.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+                ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
 
             for i in range(pts_ground_thruth.shape[2]):
-                ax1.plot3D(
+                ax.plot(
                     pts_ground_thruth[0, :, i],
                     pts_ground_thruth[1, :, i],
                     pts_ground_thruth[2, :, i],
-                    "-g",
+                    "-k",
                 )
 
             # Set fixed scale
-            ax1.set_xlim([-50, 50])
-            ax1.set_ylim([-50, 50])
-            ax1.set_zlim([0, 50])
+            ax.set_xlim([-50, 50])
+            ax.set_ylim([-50, 50])
+            ax.set_zlim([0, 100])
 
             n_in_tru = result["num_points_close_model_tru"][idx]
             J_tru = result["J_tru"][idx]
@@ -321,30 +395,33 @@ def animate_results(params, results):
             J_ratio = result["J_ratio"][idx]
 
             # Display test name with run number on graph
-            ax1.text2D(
+            ax.text2D(
                 0.05,
                 0.95,
                 f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}",
-                transform=ax1.transAxes,
+                transform=ax.transAxes,
+                fontsize=4,
             )
 
-            ax1.text2D(
+            ax.text2D(
                 0.05,
                 0.90,
                 f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}",
-                transform=ax1.transAxes,
+                transform=ax.transAxes,
+                fontsize=4,
             )
 
-            ax1.text2D(
+            ax.text2D(
                 0.05,
                 0.85,
                 f"HAT n_in: {n_in_hat}, J: {J_hat}, p: {np.array2string(p_hat, precision=2)}",
-                transform=ax1.transAxes,
+                transform=ax.transAxes,
+                fontsize=4,
             )
 
             plt.pause(0.001)
 
-    fig1.show()
+    fig.show()
 
 
 def plot_results(params, results, save=False, n_run_plot=10, fs=10):
@@ -395,6 +472,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     for run_id, result in enumerate(results):
 
         PE[:, 0, run_id] = p_tru - result["p_0"]  # Initial guess error
+
+        p_init = result["p_0"]
 
         # For all frames in the run
         for frame_id in range(dataset.frame_count()):
@@ -667,8 +746,19 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     if save:
         fig.savefig(name + "_cost_ratio.pdf")
 
+    ###########################################################
 
-plt.pause(0.001)
+    plot_3d = powerline.EstimationPlot(
+        p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
+    )
+
+    last_pts = dataset.lidar_points(dataset.frame_count() - 1)
+    plot_3d.update_pts(last_pts)
+    plot_3d.update_estimation(p_hat)
+    plot_3d.save(name=(name + "_cost_ratio.pdf"))
+
+
+###########################################################
 
 
 def table_init():
@@ -704,6 +794,323 @@ def table_add_row(table, params, stats):
             #     + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
         ]
     )
+
+
+###############################################################################
+### Real-time plotting
+###############################################################################
+class ErrorPlot:
+    """ """
+
+    ############################
+    def __init__(self, p_true, p_hat, n_steps, n_run=1):
+
+        self.n_p = p_true.shape[0]
+        self.n_steps = n_steps
+        self.n_run = n_run
+
+        self.p_true = p_true
+
+        self.PE = np.zeros((self.n_p, n_steps + 1, n_run))
+
+        self.t = np.zeros((n_steps, n_run))
+        self.n_in = np.zeros((n_steps, n_run))
+
+        self.step = 0
+        self.run = 0
+
+        self.PE[:, self.step, self.run] = p_true - p_hat
+
+    ############################
+    def init_new_run(self, p_true, p_hat):
+
+        self.p_true = p_true
+
+        self.step = 0
+        self.run = self.run + 1
+
+        self.PE[:, self.step, self.run] = self.p_true - p_hat
+
+    ############################
+    def save_new_estimation(self, p_hat, t_solve, n_in=0):
+
+        self.t[self.step, self.run] = t_solve
+        self.n_in[self.step, self.run] = n_in
+
+        self.step = self.step + 1
+
+        self.PE[:, self.step, self.run] = self.p_true - p_hat
+
+    ############################
+    def plot_error_mean_std(self, fs=10, save=False, name="test", n_run_plot=10):
+
+        PE = self.PE
+        t = self.t
+        n_in = self.n_in
+
+        if n_run_plot > self.n_run:
+            n_run_plot = self.n_run
+
+        PE_mean = np.mean(PE, axis=2)
+        PE_std = np.std(PE, axis=2)
+        t_mean = np.mean(t, axis=1)
+        t_std = np.std(t, axis=1)
+        n_mean = np.mean(n_in, axis=1)
+        n_std = np.std(n_in, axis=1)
+
+        frame = np.linspace(0, self.n_steps, self.n_steps + 1)
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(
+                frame,
+                (PE[0, :, j] + PE[1, :, j] + PE[3, :, j]) / 3,
+                "--k",
+                linewidth=0.25,
+            )
+
+        ax.plot(frame, (PE_mean[0, :] + PE_mean[1, :] + PE_mean[1, :]) / 3, "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[0, :] - PE_std[0, :],
+            PE_mean[0, :] + PE_std[0, :],
+            color="#DDDDDD",
+        )
+        ax.fill_between(
+            frame,
+            PE_mean[1, :] - PE_std[1, :],
+            PE_mean[1, :] + PE_std[1, :],
+            color="#DDDDDD",
+        )
+        ax.fill_between(
+            frame,
+            PE_mean[2, :] - PE_std[2, :],
+            PE_mean[2, :] + PE_std[2, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$(x_o,y_o,z_o)$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_translation_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[3, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[3, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[3, :] - PE_std[3, :],
+            PE_mean[3, :] + PE_std[3, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\psi$ [rad]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_orientation_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[4, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[4, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[4, :] - PE_std[4, :],
+            PE_mean[4, :] + PE_std[4, :],
+            color="#DDDDDD",
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$a$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_sag_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        l_n = PE.shape[0] - 5
+
+        for i in range(l_n):
+            k = 5 + i
+            for j in range(n_run_plot):
+                ax.plot(frame, PE[k, :, j], "--k", linewidth=0.25)
+            ax.plot(frame, PE_mean[k, :], "-r")
+            ax.fill_between(
+                frame,
+                PE_mean[k, :] - PE_std[k, :],
+                PE_mean[k, :] + PE_std[k, :],
+                color="#DDDDDD",
+            )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\Delta$[m]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_internaloffsets_error.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame[1:], t[:, j], "--k", linewidth=0.25)
+        ax.plot(frame[1:], t_mean, "-r")
+        ax.fill_between(frame[1:], t_mean - t_std, t_mean + t_std, color="#DDDDDD")
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$\Delta t$[sec]", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_solver_time.pdf")
+
+        fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+        for j in range(n_run_plot):
+            ax.plot(frame[1:], n_in[:, j], "--k", linewidth=0.25)
+        ax.plot(frame[1:], n_mean[:], "-r")
+        ax.fill_between(
+            frame[1:], n_mean[:] - n_std[:], n_mean[:] + n_std[:], color="#DDDDDD"
+        )
+
+        # ax.legend( loc = 'upper right' , fontsize = fs)
+        ax.set_xlabel("steps", fontsize=fs)
+        ax.set_ylabel("$n_{in}[\%]$", fontsize=fs)
+        ax.grid(True)
+        fig.tight_layout()
+        if save:
+            fig.savefig(name + "_nin.pdf")
+
+
+###############################################################################
+def ArrayModelEstimatorTest(
+    save=True,
+    plot=True,
+    name="test",
+    n_run=1,
+    n_steps=10,
+    # Model
+    model=powerline.ArrayModel32(),
+    p_hat=np.array([50, 50, 50, 1.0, 600, 50.0, 30.0, 50.0]),
+    p_ub=np.array([150, 150, 150, 2.0, 900, 51.0, 31.0, 51.0]),
+    p_lb=np.array([0, 0, 0, 0.0, 300, 49.0, 29.0, 49.0]),
+    # Fake data Distribution param
+    n_obs=20,
+    n_out=0,
+    x_min=-200,
+    x_max=200,
+    w_l=0.5,
+    w_o=100,
+    center=[0, 0, 0],
+    partial_obs=False,
+    # Solver param
+    n_sea=2,
+    var=np.array([10, 10, 10, 1.0, 200, 1.0, 1.0, 1.0]),
+    Q=0.0 * np.diag([0.0002, 0.0002, 0.0002, 0.001, 0.0001, 0.002, 0.002, 0.002]),
+    l=1.0,
+    power=2.0,
+    b=1000.0,
+    method="x",
+    n_s=100,
+    x_min_s=-200,
+    x_max_s=+200,
+    use_grad=True,
+):
+
+    estimator = ArrayEstimator(model, p_hat)
+
+    estimator.p_var = var
+    estimator.n_search = n_sea
+    estimator.use_grad = use_grad
+    estimator.Q = Q
+    estimator.p_lb = p_lb
+    estimator.p_ub = p_ub
+    estimator.method = method
+    estimator.Q = Q
+    estimator.b = b
+    estimator.l = l
+    estimator.power = power
+    estimator.x_min = x_min_s
+    estimator.x_max = x_max_s
+    estimator.n_sample = n_s
+    estimator.d_th = w_l * 5.0
+
+    for j in range(n_run):
+
+        print("Run no", j)
+
+        # Random true line position
+        p_true = np.random.uniform(p_lb, p_ub)
+
+        if plot:
+            plot_3d = powerline.EstimationPlot(
+                p_true, p_hat, None, model.p2r_w, xmin=-200, xmax=200
+            )
+
+        if j == 0:
+            e_plot = ErrorPlot(p_true, p_hat, n_steps, n_run)
+        else:
+            e_plot.init_new_run(p_true, p_hat)
+
+        # Alway plot the 3d graph for the last run
+        if j == (n_run - 1):
+            plot = True
+            plot_3d = powerline.EstimationPlot(p_true, p_hat, None, model.p2r_w)
+            plot_3d.show = False
+
+        for i in range(n_steps):
+
+            # Generate fake noisy data
+            pts = model.generate_test_data(
+                p_true, n_obs, x_min, x_max, w_l, n_out, center, w_o, partial_obs
+            )
+
+            if plot:
+                plot_3d.update_pts(pts)
+
+            start_time = time.time()
+            ##################################################################
+            p_hat = estimator.solve_with_search(pts, p_hat)
+            ##################################################################
+            solve_time = time.time() - start_time
+
+            if plot:
+                plot_3d.update_estimation(p_hat)
+
+            ##################################################################
+            n_tot = pts.shape[1] - n_out
+            pts_in = estimator.get_array_group(p_hat, pts)
+            n_in = pts_in.shape[1] / n_tot * 100
+            ##################################################################
+
+            # print(pts.shape,pts_in.shape)
+
+            e_plot.save_new_estimation(p_hat, solve_time, n_in)
+
+        # Plot pts_in
+        if plot:
+            plot_3d.add_pts(pts_in)
+
+    # Finalize figures
+    if save:
+        plot_3d.save(name=name)
+    # e_plot.plot_error_all_run( save = save , name = ( name + 'All') )
+    e_plot.plot_error_mean_std(save=save, name=name)
+
+    return e_plot
 
 
 ###############################################################
@@ -752,7 +1159,7 @@ if __name__ == "__main__":
         "n_search": 2,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": 2,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
@@ -769,3 +1176,4 @@ if __name__ == "__main__":
 
     plot_results(test_params, results, save=True, n_run_plot=5)
     animate_results(test_params, results)
+    # animate_results2(test_params, results)
