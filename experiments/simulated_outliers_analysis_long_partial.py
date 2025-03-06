@@ -48,11 +48,11 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 2,
+        "n_search": 5,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 400.0, 2.0, 2.0, 2.0]),
         "filter_method": "none",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 4,  # Number of tests to execute with randomized initial guess
-        "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
+        "num_randomized_tests": 10,  # Number of tests to execute with randomized initial guess
+        "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
         "x_min": -200,
@@ -67,7 +67,7 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         datagen_params["n_out"] = num_outliers
         dataset = SimulatedDataset(datagen_params)
 
-        test_params["name"] = f"Simulated 222 ({num_outliers} outliers)"
+        test_params["name"] = f"Sim222 partial obs ({num_outliers} outliers)"
         test_params["dataset"] = dataset
 
         results, stats = evaluate(test_params)
@@ -88,7 +88,6 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
 if __name__ == "__main__":
 
     # Number of outliers to simulate
-    # num_outliers_scenarios = [1, 10, 100, 500, 1000]
-    num_outliers_scenarios = [1, 3, 5]
+    num_outliers_scenarios = [1, 10, 20, 50, 100, 500]
 
     table = simulated_outliers_analysis(num_outliers_scenarios, plot=True, debug=False)
