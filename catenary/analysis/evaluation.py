@@ -755,7 +755,7 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     last_pts = dataset.lidar_points(dataset.frame_count() - 1)
     plot_3d.update_pts(last_pts)
     plot_3d.update_estimation(p_hat)
-    plot_3d.save(name=(name + "_cost_ratio.pdf"))
+    plot_3d.save(name=name)
 
 
 ###########################################################

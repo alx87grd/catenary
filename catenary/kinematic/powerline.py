@@ -1049,7 +1049,7 @@ class EstimationPlot:
     ############################
     def save(self, name="test"):
 
-        self.fig.savefig(name + "_3d_estimation.png")
+        self.fig.savefig(name + "_3d_estimation.pdf")
 
 
 """
