@@ -104,6 +104,7 @@ def evaluate(params: dict):
         result["J_tru"] = np.zeros((dataset.frame_count()))
         result["J_hat"] = np.zeros((dataset.frame_count()))
         result["n_in_ratio"] = np.zeros((dataset.frame_count()))
+        result["n_in_ratio_tru"] = np.zeros((dataset.frame_count()))
         result["J_ratio"] = np.zeros((dataset.frame_count()))
         result["solve_time_per_seach"] = np.zeros((dataset.frame_count()))
         result["num_points_mean_before_filter"] = 0
@@ -178,11 +179,18 @@ def evaluate(params: dict):
             n_in_ratio = n_in_hat / n_in_tru
             J_ratio = J_tru / J_hat
 
+            if dataset.outliers_count() > 0:
+                n_tot_line_tru = points.shape[1] - dataset.outliers_count()
+                n_in_ratio_tru = n_in_hat / n_tot_line_tru
+            else:
+                n_in_ratio_tru = -1.0  # Undefined for real datasets
+
             # Store result
             result["solve_time_per_seach"][pt_id] = solve_time_per_seach
             result["num_points_close_model_tru"][pt_id] = n_in_tru
             result["num_points_close_model_hat"][pt_id] = n_in_hat
             result["n_in_ratio"][pt_id] = n_in_ratio
+            result["n_in_ratio_tru"][pt_id] = n_in_ratio_tru
             result["J_ratio"][pt_id] = J_ratio
             result["J_tru"][pt_id] = J_tru
             result["J_hat"][pt_id] = J_hat
@@ -212,6 +220,10 @@ def evaluate(params: dict):
             [res["n_in_ratio"][-stats_num_frames:] for res in results]
         )
 
+        num_n_in_ratio_tru = np.vstack(
+            [res["n_in_ratio_tru"][-stats_num_frames:] for res in results]
+        )
+
         num_J_ratio = np.vstack([res["J_ratio"][-stats_num_frames:] for res in results])
 
         # Compute statistics on combined results
@@ -230,6 +242,9 @@ def evaluate(params: dict):
 
         stats["n_in_ratio_mean"] = np.mean(num_n_in_ratio)
         stats["n_in_ratio_std"] = np.std(num_n_in_ratio)
+
+        stats["n_in_ratio_tru_mean"] = np.mean(num_n_in_ratio_tru)
+        stats["n_in_ratio_tru_std"] = np.std(num_n_in_ratio_tru)
 
         stats["J_ratio_mean"] = np.mean(num_J_ratio)
         stats["J_ratio_std"] = np.std(num_J_ratio)
@@ -301,10 +316,11 @@ def animate_results(params, results):
             dt = result["solve_time_per_seach"][idx]
 
             n_in_ratio = result["n_in_ratio"][idx]
+            n_in_ratio_tru = result["n_in_ratio_tru"][idx]
             J_ratio = result["J_ratio"][idx]
 
             text1.set_text(
-                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, J ratio: {J_ratio:.2f}"
+                f"Test: {params['name']}, run {result_idx+1}/{len(results)}, frame {idx+1}/{dataset.frame_count()}, solve time per search [ms]: {dt*1000:.2f}, n_in ratio: {n_in_ratio:.2f}, n_in tru: {n_in_ratio_tru:.2f}, J ratio: {J_ratio:.2f}"
             )
             text2.set_text(
                 f"TRU n_in: {n_in_tru}, J: {J_tru}, p: {np.array2string(p_ground_thruth, precision=2)}"
@@ -461,6 +477,7 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     # Number of points close to model vs. ground truth
     pt_ratio = np.zeros((n_frame, n_run))
+    pt_ratio_tru = np.zeros((n_frame, n_run))
 
     # Cost function
     cost = np.zeros((n_frame, n_run))
@@ -486,6 +503,7 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
             t_solve[frame_id, run_id] = result["solve_time_per_seach"][frame_id]
             pt_in[frame_id, run_id] = result["num_points_close_model_hat"][frame_id]
             pt_ratio[frame_id, run_id] = result["n_in_ratio"][frame_id]
+            pt_ratio_tru[frame_id, run_id] = result["n_in_ratio_tru"][frame_id]
             cost[frame_id, run_id] = result["J_hat"][frame_id]
             cost_ratio[frame_id, run_id] = result["J_ratio"][frame_id]
 
@@ -497,6 +515,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     pt_in_std = np.std(pt_in, axis=1)
     pt_ratio_mean = np.mean(pt_ratio, axis=1)
     pt_ratio_std = np.std(pt_ratio, axis=1)
+    pt_ratio_tru_mean = np.mean(pt_ratio_tru, axis=1)
+    pt_ratio_tru_std = np.std(pt_ratio_tru, axis=1)
     cost_mean = np.mean(cost, axis=1)
     cost_std = np.std(cost, axis=1)
     cost_ratio_mean = np.mean(cost_ratio, axis=1)
@@ -729,6 +749,28 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
 
     for j in range(n_run_plot):
+        ax.plot(frame[1:], pt_ratio_tru[:, j], "--k", linewidth=0.25)
+    ax.plot(frame[1:], pt_ratio_mean[:], "-r")
+    ax.fill_between(
+        frame[1:],
+        pt_ratio_tru_mean[:] - pt_ratio_tru_std[:],
+        pt_ratio_tru_mean[:] + pt_ratio_tru_std[:],
+        color="#DDDDDD",
+    )
+
+    ax.set_xlabel("frames", fontsize=fs)
+    ax.set_ylabel("accuracy (inliers)", fontsize=fs)
+    ax.grid(True)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_pt_ratio_tru.pdf")
+
+    ###########################################################
+
+    fig, ax = plt.subplots(1, figsize=(4, 2), dpi=300, frameon=True)
+
+    for j in range(n_run_plot):
         ax.plot(frame[1:], cost_ratio[:, j], "--k", linewidth=0.25)
     ax.plot(frame[1:], cost_ratio_mean[:], "-r")
     ax.fill_between(
@@ -769,6 +811,7 @@ def table_init():
         "num. points",
         "Solve time [ms]",
         "on-model point ratio [%]",
+        "on-model point ratio tru [%]",
         "cost-function ratio [%]",
         "Translation error [m]",
         "orientation error [rad]",
@@ -785,6 +828,7 @@ def table_add_row(table, params, stats):
             f'{stats["num_points_mean_after_filter"]:.0f} +/- {stats["num_points_std_after_filter"]:.0f}',
             f'{stats["solve_time_per_seach_mean"]*1000:.2f} +/- {stats["solve_time_per_seach_std"]*1000:.2f}',
             f'{stats["n_in_ratio_mean"]*100:.1f}% +/- {stats["n_in_ratio_std"]*100:.1f}',
+            f'{stats["n_in_ratio_tru_mean"]*100:.1f}% +/- {stats["n_in_ratio_tru_std"]*100:.1f}',
             f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
             f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
             f'{np.array2string(stats["p_err_mean"][3], precision=2)} +/- {np.array2string(stats["p_err_std"][3], precision=2)}',

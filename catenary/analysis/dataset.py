@@ -73,6 +73,18 @@ class Dataset(ABC):
         """
         pass
 
+    @abstractmethod
+    def outliers_count(self) -> int:
+        """
+
+        Returns the number of outliers at each frame in the dataset.
+
+        -1 if the number of outliers is unknown.
+
+        """
+
+        pass
+
 
 class SimulatedDataset(Dataset):
     """
@@ -139,6 +151,8 @@ class SimulatedDataset(Dataset):
         partial_obs = self.params["partial_obs"]
         p_tru = self.params["p_tru"]
 
+        self.n_out = n_out
+
         # Number of lines in model
         n_lines = self.model.q
 
@@ -181,6 +195,10 @@ class SimulatedDataset(Dataset):
 
         # For now return the same ground truth for all frames
         return self.params["p_tru"]
+
+    def outliers_count(self) -> int:
+
+        return self.n_out
 
 
 class ExperimentalDataset(Dataset):
@@ -240,6 +258,10 @@ class ExperimentalDataset(Dataset):
 
         # For now return the same ground truth for all frames
         return self._ground_truth
+
+    def outliers_count(self) -> int:
+
+        return -1
 
 
 def load_dataset(name):
