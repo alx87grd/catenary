@@ -1,39 +1,49 @@
 import numpy as np
 
-# import open3d as o3d
+try:
+    import open3d as o3d
+except ImportError:
+    print("Open3D is not installed. Please install it using 'pip install open3d'.")
+    o3d = None
+
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
-# def remove_ground_plane(points, distance_threshold=0.01, ransac_n=3, num_iterations=1000):
-#     """
-#     Remove the ground plane from points.
 
-#     Parameters:
-#     - points: numpy array of shape (n_points, 3) representing the point cloud.
-#     - distance_threshold: Maximum distance a point can be from the plane to be considered an inlier.
-#     - ransac_n: Number of points to sample for generating a plane model.
-#     - num_iterations: Number of iterations for RANSAC.
+def remove_ground_plane(
+    points, distance_threshold=0.01, ransac_n=3, num_iterations=1000
+):
+    """
+    Remove the ground plane from points.
 
-#     Returns:
-#     - non_ground_points: numpy array of shape (n_non_ground_points, 3) representing the point cloud without the ground plane.
-#     """
+    Parameters:
+    - points: numpy array of shape (n_points, 3) representing the point cloud.
+    - distance_threshold: Maximum distance a point can be from the plane to be considered an inlier.
+    - ransac_n: Number of points to sample for generating a plane model.
+    - num_iterations: Number of iterations for RANSAC.
 
-#     # Convert numpy array to Open3D point cloud
-#     point_cloud = o3d.geometry.PointCloud()
-#     point_cloud.points = o3d.utility.Vector3dVector(points)
+    Returns:
+    - non_ground_points: numpy array of shape (n_non_ground_points, 3) representing the point cloud without the ground plane.
+    """
 
-#     # Apply RANSAC to segment the ground plane
-#     plane_model, inliers = point_cloud.segment_plane(distance_threshold=distance_threshold,
-#                                                      ransac_n=ransac_n,
-#                                                      num_iterations=num_iterations)
+    # Convert numpy array to Open3D point cloud
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(points)
 
-#     # Extract non-ground points
-#     non_ground_cloud = point_cloud.select_by_index(inliers, invert=True)
+    # Apply RANSAC to segment the ground plane
+    plane_model, inliers = point_cloud.segment_plane(
+        distance_threshold=distance_threshold,
+        ransac_n=ransac_n,
+        num_iterations=num_iterations,
+    )
 
-#     # Convert back to numpy array
-#     non_ground_points = np.asarray(non_ground_cloud.points)
+    # Extract non-ground points
+    non_ground_cloud = point_cloud.select_by_index(inliers, invert=True)
 
-#     return non_ground_points
+    # Convert back to numpy array
+    non_ground_points = np.asarray(non_ground_cloud.points)
+
+    return non_ground_points
 
 
 def find_clusters_dbscan(points, eps=0.02, min_samples=10):

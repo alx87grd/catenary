@@ -4,7 +4,7 @@ import time
 
 from catenary.kinematic import powerline
 
-from catenary.estimation.filter import filter_cable_points
+from catenary.estimation.filter import filter_cable_points, remove_ground_plane
 from catenary.estimation.estimator import ArrayEstimator
 from catenary.estimation import costfunction
 from catenary.tools import print_progress_bar
@@ -1196,15 +1196,15 @@ if __name__ == "__main__":
         "p_0": None,  # np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
         "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.00001, 0.02, 0.02, 0.02]),
         "l": 1.0,
-        "b": 100.0,
+        "b": 10.0,
         "power": 2.0,
-        "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
+        "p_lb": np.array([-100.0, -100.0, 12.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 2,
+        "n_search": 5,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 2,  # Number of tests to execute with randomized initial guess
-        "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
+        "num_randomized_tests": 1,  # Number of tests to execute with randomized initial guess
+        "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
         "x_min": -200,
@@ -1212,8 +1212,8 @@ if __name__ == "__main__":
         "use_grad": True,
     }
 
-    dataset = SimulatedDataset(datagen_params)
-    # dataset = load_dataset("ligne315kv_test1")
+    # dataset = SimulatedDataset(datagen_params)
+    dataset = load_dataset("ligne315kv_test1")
 
     test_params["dataset"] = dataset
     results, stats = evaluate(test_params)

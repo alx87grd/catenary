@@ -21,11 +21,11 @@ def run_315kv_filter_analysis(filter_methods, plot=False, debug=False):
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 3,
+        "n_search": 5,
         "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
         "filter_method": "",
-        "num_randomized_tests": 3,  # Number of tests to execute with randomized initial guess
-        "stats_num_frames": 50,  # Number of last frames to use for statistics (experimental results have 100 frames)
+        "num_randomized_tests": 100,  # Number of tests to execute with randomized initial guess
+        "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
         "x_min": -200,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # Filtering methods to tests
     # Available methods: none, ground_filter, clustering and corridor
     # filter_methods = ["ground_filter", "clustering", "corridor"]
-    # filter_methods = ["corridor", "ground_filter", "clustering", "None"]
-    filter_methods = ["corridor"]
+    filter_methods = ["corridor", "ground_filter", "clustering"]
+    # filter_methods = ["corridor"]
 
-    table = run_315kv_filter_analysis(filter_methods, plot=True, debug=True)
+    table = run_315kv_filter_analysis(filter_methods, plot=True, debug=False)
