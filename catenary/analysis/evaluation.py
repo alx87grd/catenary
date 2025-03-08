@@ -892,15 +892,15 @@ def table_init():
     # table.field_names = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg"]
     table.field_names = [
         "Test name",
-        "num. points",
+        "n pts",
         "Solve time [ms]",
-        "on-model point ratio [%]",
-        "on-model point ratio tru [%]",
-        "cost-function ratio [%]",
-        "Translation error [m]",
+        "accuracy [%]",
+        # "on-model point ratio tru [%]",
+        # "cost-function ratio [%]",
+        # "Translation error [m]",
         "orientation error [rad]",
         "sag error [m]",
-        "offsets error [m]",
+        # "offsets error [m]",
     ]
     return table
 
@@ -912,12 +912,12 @@ def table_add_row(table, params, stats):
             f'{stats["num_points_mean_after_filter"]:.0f} +/- {stats["num_points_std_after_filter"]:.0f}',
             f'{stats["solve_time_per_seach_mean"]*1000:.2f} +/- {stats["solve_time_per_seach_std"]*1000:.2f}',
             f'{stats["n_in_ratio_mean"]*100:.1f}% +/- {stats["n_in_ratio_std"]*100:.1f}',
-            f'{stats["n_in_ratio_tru_mean"]*100:.1f}% +/- {stats["n_in_ratio_tru_std"]*100:.1f}',
-            f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
-            f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
+            # f'{stats["n_in_ratio_tru_mean"]*100:.1f}% +/- {stats["n_in_ratio_tru_std"]*100:.1f}',
+            # f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
+            # f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
             f'{np.array2string(stats["p_err_mean"][3], precision=2)} +/- {np.array2string(stats["p_err_std"][3], precision=2)}',
             f'{np.array2string(stats["p_err_mean"][4], precision=2)} +/- {np.array2string(stats["p_err_std"][4], precision=2)}',
-            f'{np.array2string(stats["p_err_mean"][5:], precision=2)} +/- {np.array2string(stats["p_err_std"][5:], precision=2)}',
+            # f'{np.array2string(stats["p_err_mean"][5:], precision=2)} +/- {np.array2string(stats["p_err_std"][5:], precision=2)}',
             #     f'({stats["p_err_mean"][0]:.2f}, {stats["p_err_mean"][1]:.2f}, {stats["p_err_mean"][2]:.2f}) +/- '
             #     + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
         ]

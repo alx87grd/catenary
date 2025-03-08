@@ -1,5 +1,5 @@
 from catenary.analysis.evaluation import (
-    animate_results,
+    animate_results2,
     evaluate,
     plot_results,
     table_add_row,
@@ -13,15 +13,15 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
 
     datagen_params = {
         "name": "sim_222",
-        "n_out": 10,
+        "n_out": 50,
         "n_frames": 100,
         "n_obs": 10,
-        "x_min": -50,
-        "x_max": 50,
+        "x_min": -100,
+        "x_max": 100,
         "w_l": 0.2,
-        "w_o": 50.0,
-        "center": [0, 0, 0],
-        "partial_obs": False,
+        "w_o": 10.0,
+        "center": [0, 0, -25],
+        "partial_obs": True,
         "p_tru": np.array(
             [
                 -22.61445006,
@@ -34,23 +34,37 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
                 7.28652209,
             ]
         ),
+        "seed": 0,
     }
 
     # Test parameters
     test_params = {
-        "name": "Simulated 222",
+        "name": "test",
         "dataset": None,
         "model": "222",
         "p_0": None,  # np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.0001, 0.02, 0.02, 0.02]),
+        "Q": 0.01
+        * np.diag(
+            [
+                1.0 / 50,
+                1.0 / 50,
+                1.0 / 50,
+                1.0 / 2.0,
+                1.0 / 2000,
+                1.0 / 2,
+                1.0 / 2,
+                1.0 / 2,
+            ]
+        ),
         "l": 1.0,
-        "b": 1000.0,
+        "b": 100.0,
         "power": 2.0,
-        "p_lb": np.array([-100.0, -100.0, 0.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
+        "p_lb": np.array([-100.0, -100.0, 12.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
         "n_search": 5,
-        "p_var": np.array([50.0, 50.0, 50.0, 5.0, 400.0, 2.0, 2.0, 2.0]),
-        "filter_method": "none",  # No filter, as simulated data is already filtered
+        "p_var": np.array([5.0, 5.0, 5.0, 1.0, 400.0, 2.0, 2.0, 2.0]),
+        "filter_method": "corridor",  # No filter, as simulated data is already filtered
+        # "filter_method": "clustering",  # No filter, as simulated data is already filtered
         "num_randomized_tests": 100,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
@@ -67,8 +81,8 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         datagen_params["n_out"] = num_outliers
         dataset = SimulatedDataset(datagen_params)
 
-        test_params["name"] = f"Sim 222 global obs({num_outliers} outliers)"
-        test_params["dataset"] = dataset
+        test_params["name"] = f"Simulated global obs with {num_outliers} outliers)"
+        test_params["dataset"] = datagen_params
 
         results, stats = evaluate(test_params)
 
@@ -76,7 +90,7 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
             plot_results(test_params, results, save=True)
 
         if debug:
-            animate_results(test_params, results)
+            animate_results2(test_params, results)
 
         table_add_row(table, test_params, stats)
 
@@ -88,7 +102,7 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
 if __name__ == "__main__":
 
     # Number of outliers to simulate
-    num_outliers_scenarios = [1, 10, 20, 50, 100, 200, 300, 400, 500, 750, 1000, 2000]
+    num_outliers_scenarios = [10, 20, 50, 75, 100, 150, 200, 300]
 
     table = simulated_outliers_analysis(num_outliers_scenarios, plot=True, debug=False)
 
