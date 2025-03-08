@@ -8,6 +8,7 @@ from catenary.estimation.filter import filter_cable_points, remove_ground_plane
 from catenary.estimation.estimator import ArrayEstimator
 from catenary.estimation import costfunction
 from catenary.tools import print_progress_bar
+from catenary.analysis.dataset import Dataset, SimulatedDataset
 
 from prettytable import PrettyTable
 
@@ -28,8 +29,15 @@ def evaluate(params: dict):
     """
     test_name = params["name"]
 
-    # Load dataset
-    dataset = params["dataset"]
+    # Load dataset vs simulated dataset
+    if isinstance(params["dataset"], Dataset):
+        datagen = False
+        dataset = params["dataset"]
+    else:
+        datagen = True
+        datagen_params = params["dataset"]
+        datagen_seed = datagen_params["seed"]
+        dataset = SimulatedDataset(datagen_params)
 
     # Initialize model
     model = powerline.create_array_model(params["model"])
@@ -61,6 +69,15 @@ def evaluate(params: dict):
         # Randomize initial guess within [p_lb, p_ub] bounds
         if params["p_0"] is None:
             p_0 = rng.uniform(params["p_lb"], params["p_ub"])
+            # print(f"Randomized initial guess: {p_0}")
+        else:
+            p_0 = params["p_0"]
+            print(f"Fixed initial guess: {p_0}")
+
+        # Randomize noise in dataset
+        if datagen:
+            datagen_params["seed"] = datagen_seed + i * 100
+            dataset = SimulatedDataset(datagen_params)
 
         # Initialize estimator
         estimator = ArrayEstimator(model, p_0)
@@ -264,7 +281,16 @@ def animate_results(params, results):
         Array of results dictionary.
     """
 
-    dataset = params["dataset"]
+    # Load dataset vs simulated dataset
+    if isinstance(params["dataset"], Dataset):
+        datagen = False
+        dataset = params["dataset"]
+    else:
+        datagen = True
+        datagen_params = params["dataset"]
+        datagen_seed = datagen_params["seed"]
+        dataset = SimulatedDataset(datagen_params)
+
     model = powerline.create_array_model(params["model"])
 
     for result_idx, result in enumerate(results):
@@ -345,7 +371,16 @@ def animate_results2(params, results):
     fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
     ax = fig.add_subplot(projection="3d")
 
-    dataset = params["dataset"]
+    # Load dataset vs simulated dataset
+    if isinstance(params["dataset"], Dataset):
+        datagen = False
+        dataset = params["dataset"]
+    else:
+        datagen = True
+        datagen_params = params["dataset"]
+        datagen_seed = datagen_params["seed"]
+        dataset = SimulatedDataset(datagen_params)
+
     model = powerline.create_array_model(params["model"])
 
     for result_idx, result in enumerate(results):
@@ -365,15 +400,15 @@ def animate_results2(params, results):
                 p_ground_thruth, x_min=-100, x_max=100, n=200
             )[1]
 
-            # Plot raw lidar points
-            ax.scatter(
-                dataset.lidar_points(idx)[0],
-                dataset.lidar_points(idx)[1],
-                dataset.lidar_points(idx)[2],
-                color="red",
-                alpha=0.5,
-                s=1,
-            )
+            # # Plot raw lidar points
+            # ax.scatter(
+            #     dataset.lidar_points(idx)[0],
+            #     dataset.lidar_points(idx)[1],
+            #     dataset.lidar_points(idx)[2],
+            #     color="red",
+            #     alpha=0.5,
+            #     s=1,
+            # )
 
             # # Plot filtered lidar points
             ax.scatter(
@@ -399,7 +434,7 @@ def animate_results2(params, results):
             # Set fixed scale
             ax.set_xlim([-50, 50])
             ax.set_ylim([-50, 50])
-            ax.set_zlim([0, 100])
+            ax.set_zlim([-25, 75])
 
             n_in_tru = result["num_points_close_model_tru"][idx]
             J_tru = result["J_tru"][idx]
@@ -454,7 +489,16 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     name = params["name"]
 
-    dataset = params["dataset"]
+    # Load dataset vs simulated dataset
+    if isinstance(params["dataset"], Dataset):
+        datagen = False
+        dataset = params["dataset"]
+    else:
+        datagen = True
+        datagen_params = params["dataset"]
+        datagen_seed = datagen_params["seed"]
+        dataset = SimulatedDataset(datagen_params)
+
     model = powerline.create_array_model(params["model"])
 
     p_tru = dataset.ground_thruth_params(0)
@@ -790,14 +834,54 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     ###########################################################
 
-    plot_3d = powerline.EstimationPlot(
-        p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
+    # plot_3d = powerline.EstimationPlot(
+    #     p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
+    # )
+
+    # last_pts = dataset.lidar_points(dataset.frame_count() - 1)
+    # plot_3d.update_pts(last_pts)
+    # plot_3d.update_estimation(p_hat)
+    # plot_3d.save(name=name)
+
+    fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
+    ax = fig.add_subplot(projection="3d")
+
+    # Compute projected power line points using estimated model
+    pts_hat = model.p2r_w(p_hat, x_min=-100, x_max=100, n=200)[1]
+
+    # Compute ground thruth line points
+    pts_ground_thruth = model.p2r_w(p_tru, x_min=-100, x_max=100, n=200)[1]
+
+    # # Plot filtered lidar points
+    ax.scatter(
+        result["points"][-1][0],
+        result["points"][-1][1],
+        result["points"][-1][2],
+        color="blue",
+        alpha=1,
+        s=5,
     )
 
-    last_pts = dataset.lidar_points(dataset.frame_count() - 1)
-    plot_3d.update_pts(last_pts)
-    plot_3d.update_estimation(p_hat)
-    plot_3d.save(name=name)
+    for i in range(pts_hat.shape[2]):
+        ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
+
+    for i in range(pts_ground_thruth.shape[2]):
+        ax.plot(
+            pts_ground_thruth[0, :, i],
+            pts_ground_thruth[1, :, i],
+            pts_ground_thruth[2, :, i],
+            "-k",
+        )
+
+    # Set fixed scale
+    ax.set_xlim([-50, 50])
+    ax.set_ylim([-50, 50])
+    ax.set_zlim([-25, 75])
+
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_3D.pdf")
 
 
 ###########################################################
@@ -1165,14 +1249,14 @@ if __name__ == "__main__":
 
     datagen_params = {
         "name": "sim_222",
-        "n_out": 10,
+        "n_out": 50,
         "n_frames": 100,
         "n_obs": 10,
-        "x_min": -5,
-        "x_max": 5,
+        "x_min": -100,
+        "x_max": 100,
         "w_l": 0.2,
-        "w_o": 50.0,
-        "center": [0, 0, 0],
+        "w_o": 10.0,
+        "center": [0, 0, -25],
         "partial_obs": True,
         "p_tru": np.array(
             [
@@ -1186,6 +1270,7 @@ if __name__ == "__main__":
                 7.28652209,
             ]
         ),
+        "seed": 0,
     }
 
     # Test parameters
@@ -1194,16 +1279,29 @@ if __name__ == "__main__":
         "dataset": None,
         "model": "222",
         "p_0": None,  # np.array([-25.0, 40.0, 0.0, 1.0, 700, 6.0, 6.0, 6.0]),
-        "Q": 0.01 * np.diag([0.02, 0.02, 0.002, 0.01, 0.00001, 0.02, 0.02, 0.02]),
+        "Q": 0.01
+        * np.diag(
+            [
+                1.0 / 50,
+                1.0 / 50,
+                1.0 / 50,
+                1.0 / 2.0,
+                1.0 / 2000,
+                1.0 / 2,
+                1.0 / 2,
+                1.0 / 2,
+            ]
+        ),
         "l": 1.0,
-        "b": 10.0,
+        "b": 100.0,
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 12.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
         "n_search": 5,
-        "p_var": np.array([50.0, 50.0, 50.0, 5.0, 200.0, 2.0, 2.0, 2.0]),
+        "p_var": np.array([5.0, 5.0, 5.0, 1.0, 400.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 1,  # Number of tests to execute with randomized initial guess
+        # "filter_method": "clustering",  # No filter, as simulated data is already filtered
+        "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
@@ -1212,12 +1310,14 @@ if __name__ == "__main__":
         "use_grad": True,
     }
 
-    # dataset = SimulatedDataset(datagen_params)
+    # Real data
     dataset = load_dataset("ligne315kv_test1")
-
     test_params["dataset"] = dataset
-    results, stats = evaluate(test_params)
 
+    # Simulated data
+    # test_params["dataset"] = datagen_params
+
+    results, stats = evaluate(test_params)
     plot_results(test_params, results, save=True, n_run_plot=5)
-    animate_results(test_params, results)
-    # animate_results2(test_params, results)
+    # animate_results(test_params, results)
+    animate_results2(test_params, results)

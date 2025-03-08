@@ -101,6 +101,7 @@ class SimulatedDataset(Dataset):
         center = self.params["center"]
         partial_obs = self.params["partial_obs"]
         p_tru = self.params["p_tru"]
+        seed = self.params["seed"]
     """
 
     def __init__(self, params):
@@ -161,7 +162,7 @@ class SimulatedDataset(Dataset):
 
         for frame_idx in range(n_frames):
             # Use a different seed at each frame to randomize noise
-            seed = frame_idx
+            seed = self.params["seed"] + frame_idx
             pts = self.model.generate_test_data(
                 p_tru,
                 n_obs,
