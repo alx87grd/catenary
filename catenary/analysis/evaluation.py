@@ -400,15 +400,35 @@ def animate_results2(params, results):
                 p_ground_thruth, x_min=-100, x_max=100, n=200
             )[1]
 
-            # # Plot raw lidar points
-            # ax.scatter(
-            #     dataset.lidar_points(idx)[0],
-            #     dataset.lidar_points(idx)[1],
-            #     dataset.lidar_points(idx)[2],
-            #     color="red",
-            #     alpha=0.5,
-            #     s=1,
-            # )
+            for i in range(pts_ground_thruth.shape[2]):
+
+                if i == 0:
+                    ax.plot(
+                        pts_ground_thruth[0, :, i],
+                        pts_ground_thruth[1, :, i],
+                        pts_ground_thruth[2, :, i],
+                        "-k",
+                        label="True",
+                    )
+                else:
+                    ax.plot(
+                        pts_ground_thruth[0, :, i],
+                        pts_ground_thruth[1, :, i],
+                        pts_ground_thruth[2, :, i],
+                        "-k",
+                    )
+
+            for i in range(pts_hat.shape[2]):
+                if i == 0:
+                    ax.plot(
+                        pts_hat[0, :, i],
+                        pts_hat[1, :, i],
+                        pts_hat[2, :, i],
+                        "--",
+                        label="Est.",
+                    )
+                else:
+                    ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
 
             # # Plot filtered lidar points
             ax.scatter(
@@ -416,20 +436,20 @@ def animate_results2(params, results):
                 result["points"][idx][1],
                 result["points"][idx][2],
                 color="blue",
-                alpha=1,
-                s=5,
+                alpha=0.5,
+                s=3,
+                label="Pts",
             )
 
-            for i in range(pts_hat.shape[2]):
-                ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
-
-            for i in range(pts_ground_thruth.shape[2]):
-                ax.plot(
-                    pts_ground_thruth[0, :, i],
-                    pts_ground_thruth[1, :, i],
-                    pts_ground_thruth[2, :, i],
-                    "-k",
-                )
+            # # Plot raw lidar points
+            # ax.scatter(
+            #     dataset.lidar_points(idx)[0],
+            #     dataset.lidar_points(idx)[1],
+            #     dataset.lidar_points(idx)[2],
+            #     color="red",
+            #     alpha=0.2,
+            #     s=1,
+            # )
 
             # Set fixed scale
             ax.set_xlim([-50, 50])
@@ -471,6 +491,7 @@ def animate_results2(params, results):
             )
 
             plt.pause(0.001)
+            ax.legend(loc="upper right")
 
     fig.show()
 
@@ -489,6 +510,8 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     name = params["name"]
 
+    n_run = len(results)
+
     # Load dataset vs simulated dataset
     if isinstance(params["dataset"], Dataset):
         datagen = False
@@ -505,7 +528,6 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     n_p = p_tru.shape[0]
     n_frame = dataset.frame_count()
-    n_run = len(results)
 
     if n_run_plot > n_run:
         n_run_plot = n_run
@@ -535,6 +557,10 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
         PE[:, 0, run_id] = p_tru - result["p_0"]  # Initial guess error
 
         p_init = result["p_0"]
+
+        if datagen:
+            datagen_params["seed"] = datagen_seed + run_id * 100
+            dataset = SimulatedDataset(datagen_params)
 
         # For all frames in the run
         for frame_id in range(dataset.frame_count()):
@@ -852,36 +878,170 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
     # Compute ground thruth line points
     pts_ground_thruth = model.p2r_w(p_tru, x_min=-100, x_max=100, n=200)[1]
 
+    for i in range(pts_ground_thruth.shape[2]):
+
+        if i == 0:
+            ax.plot(
+                pts_ground_thruth[0, :, i],
+                pts_ground_thruth[1, :, i],
+                pts_ground_thruth[2, :, i],
+                "-k",
+                label="True",
+            )
+        else:
+            ax.plot(
+                pts_ground_thruth[0, :, i],
+                pts_ground_thruth[1, :, i],
+                pts_ground_thruth[2, :, i],
+                "-k",
+            )
+
+    for i in range(pts_hat.shape[2]):
+        if i == 0:
+            ax.plot(
+                pts_hat[0, :, i],
+                pts_hat[1, :, i],
+                pts_hat[2, :, i],
+                "--",
+                label="Est.",
+            )
+        else:
+            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
+
     # # Plot filtered lidar points
     ax.scatter(
         result["points"][-1][0],
         result["points"][-1][1],
         result["points"][-1][2],
         color="blue",
-        alpha=1,
-        s=5,
+        alpha=0.5,
+        s=3,
+        label="Pts",
     )
 
-    for i in range(pts_hat.shape[2]):
-        ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
-
-    for i in range(pts_ground_thruth.shape[2]):
-        ax.plot(
-            pts_ground_thruth[0, :, i],
-            pts_ground_thruth[1, :, i],
-            pts_ground_thruth[2, :, i],
-            "-k",
-        )
+    # # Plot raw lidar points
+    # ax.scatter(
+    #     dataset.lidar_points(99)[0],
+    #     dataset.lidar_points(99)[1],
+    #     dataset.lidar_points(99)[2],
+    #     color="red",
+    #     alpha=0.2,
+    #     s=1,
+    # )
 
     # Set fixed scale
     ax.set_xlim([-50, 50])
     ax.set_ylim([-50, 50])
     ax.set_zlim([-25, 75])
 
+    ax.legend(loc="upper right", fontsize=fs)
+
+    ax.view_init(elev=19, azim=158)
+
+    fig.tight_layout()
     fig.show()
 
     if save:
         fig.savefig(name + "_3D.pdf")
+
+    ###########################################################
+
+    # plot_3d = powerline.EstimationPlot(
+    #     p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
+    # )
+
+    # last_pts = dataset.lidar_points(dataset.frame_count() - 1)
+    # plot_3d.update_pts(last_pts)
+    # plot_3d.update_estimation(p_hat)
+    # plot_3d.save(name=name)
+
+    fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
+    ax = fig.add_subplot(projection="3d")
+
+    # Compute projected power line points using estimated model
+    pts_hat = model.p2r_w(p_hat, x_min=-100, x_max=100, n=200)[1]
+
+    # Compute ground thruth line points
+    pts_ground_thruth = model.p2r_w(p_tru, x_min=-100, x_max=100, n=200)[1]
+
+    # # Plot raw lidar points
+    # ax.scatter(
+    #     dataset.lidar_points(99)[0],
+    #     dataset.lidar_points(99)[1],
+    #     dataset.lidar_points(99)[2],
+    #     color="red",
+    #     alpha=0.5,
+    #     s=1,
+    #     label="Lidar",
+    #     zorder=-1,
+    # )
+
+    # Plot raw lidar points
+    ax.plot(
+        dataset.lidar_points(99)[0],
+        dataset.lidar_points(99)[1],
+        dataset.lidar_points(99)[2],
+        ".r",
+        markersize=1,
+        label="Lidar",
+        zorder=-1,
+    )
+
+    for i in range(pts_ground_thruth.shape[2]):
+
+        if i == 0:
+            ax.plot(
+                pts_ground_thruth[0, :, i],
+                pts_ground_thruth[1, :, i],
+                pts_ground_thruth[2, :, i],
+                "-k",
+                label="True",
+            )
+        else:
+            ax.plot(
+                pts_ground_thruth[0, :, i],
+                pts_ground_thruth[1, :, i],
+                pts_ground_thruth[2, :, i],
+                "-k",
+            )
+
+    for i in range(pts_hat.shape[2]):
+        if i == 0:
+            ax.plot(
+                pts_hat[0, :, i],
+                pts_hat[1, :, i],
+                pts_hat[2, :, i],
+                "--",
+                label="Est.",
+            )
+        else:
+            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
+
+    # # Plot filtered lidar points
+    ax.scatter(
+        result["points"][-1][0],
+        result["points"][-1][1],
+        result["points"][-1][2],
+        color="blue",
+        alpha=0.9,
+        s=3,
+        label="Pts",
+    )
+
+    # Set fixed scale
+    ax.set_xlim([-50, 50])
+    ax.set_ylim([-50, 50])
+    ax.set_zlim([-25, 75])
+
+    ax.legend(loc="upper right", fontsize=fs)
+
+    ax.view_init(elev=19, azim=158)
+
+    fig.tight_layout()
+    fig.show()
+
+    if save:
+        fig.savefig(name + "_3D_with_lidar.pdf")
 
 
 ###########################################################
@@ -1297,11 +1457,11 @@ if __name__ == "__main__":
         "power": 2.0,
         "p_lb": np.array([-100.0, -100.0, 12.0, 1.5, 500.0, 5.0, 6.0, 6.0]),
         "p_ub": np.array([100.0, 100.0, 25.0, 2.5, 1500.0, 7.0, 9.0, 9.0]),
-        "n_search": 5,
+        "n_search": 1,
         "p_var": np.array([5.0, 5.0, 5.0, 1.0, 400.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         # "filter_method": "clustering",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": 1,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
