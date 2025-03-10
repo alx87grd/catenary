@@ -12,8 +12,9 @@ from scipy.optimize import minimize
 import time
 
 
-from catenary import singleline as catenary
-from catenary import powerline
+from catenary.kinematic import singleline as catenary
+from catenary.kinematic import powerline
+from catenary.estimation import costfunction as cf
 
 
 def basic_array3_convergence_test():
@@ -59,8 +60,8 @@ def basic_array3_convergence_test():
     start_time = time.time()
     plot = powerline.EstimationPlot(p, p_init, pts, model.p2r_w, 25, -50, 50)
 
-    func = lambda p: powerline.J(p, pts, p_init, params)
-    grad = lambda p: powerline.dJ_dp(p, pts, p_init, params)
+    func = lambda p: cf.J(p, pts, p_init, params)
+    grad = lambda p: cf.dJ_dp(p, pts, p_init, params)
 
     res = minimize(
         func,
@@ -142,7 +143,7 @@ def basic_array32_convergence_test():
     start_time = time.time()
     plot = powerline.EstimationPlot(p, p_init, pts, model.p2r_w, 25, -50, 50)
 
-    func = lambda p: powerline.J(p, pts, p_init, params)
+    func = lambda p: cf.J(p, pts, p_init, params)
 
     res = minimize(
         func,
@@ -209,7 +210,7 @@ def basic_array32_tracking_test():
 
         params[1] = np.ones(pts.shape[1]) / pts.shape[1]
 
-        func = lambda p: powerline.J(p, pts, p_hat, params)
+        func = lambda p: cf.J(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -295,7 +296,7 @@ def hard_array32_tracking_test():
 
         params[1] = np.ones(pts.shape[1]) / pts.shape[1]
 
-        func = lambda p: powerline.J(p, pts, p_hat, params)
+        func = lambda p: cf.J(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -380,7 +381,7 @@ def basic_array2221_tracking_test():
 
         params[1] = np.ones(pts.shape[1]) / pts.shape[1]
 
-        func = lambda p: powerline.J(p, pts, p_hat, params)
+        func = lambda p: cf.J(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -483,7 +484,7 @@ def hard_array2221_tracking_test():
 
         params[1] = np.ones(pts.shape[1]) / pts.shape[1]
 
-        func = lambda p: powerline.J(p, pts, p_hat, params)
+        func = lambda p: cf.J(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -569,7 +570,7 @@ def hard_arrayconstant2221_tracking_test():
 
         params[1] = np.ones(pts.shape[1]) / pts.shape[1]
 
-        func = lambda p: powerline.J(p, pts, p_hat, params)
+        func = lambda p: cf.J(p, pts, p_hat, params)
 
         res = minimize(
             func,
@@ -646,7 +647,7 @@ def speed_test(plot=False):
     # 1
     ###########################
 
-    func = lambda p: powerline.J(p, pts, p_hat, params)
+    func = lambda p: cf.J(p, pts, p_hat, params)
 
     start_time = time.time()
 
@@ -668,7 +669,7 @@ def speed_test(plot=False):
     # 2
     ###########################
 
-    jac = lambda p: powerline.dJ_dp(p, pts, p_hat, params)
+    jac = lambda p: cf.dJ_dp(p, pts, p_hat, params)
 
     start_time = time.time()
 
@@ -692,7 +693,7 @@ def speed_test(plot=False):
 
     params[6] = "x"
 
-    func = lambda p: powerline.J(p, pts, p_hat, params)
+    func = lambda p: cf.J(p, pts, p_hat, params)
 
     start_time = time.time()
 
@@ -714,7 +715,7 @@ def speed_test(plot=False):
     # 4
     ###########################
 
-    jac = lambda p: powerline.dJ_dp(p, pts, p_hat, params)
+    jac = lambda p: cf.dJ_dp(p, pts, p_hat, params)
 
     start_time = time.time()
 

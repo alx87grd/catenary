@@ -12,8 +12,8 @@ from scipy.optimize import minimize
 import time
 
 
-from catenary import singleline as catenary
-from catenary import powerline
+from catenary.kinematic import powerline
+from catenary.estimation import costfunction as cf
 
 
 def J1_vs_J2():
@@ -44,7 +44,7 @@ def J1_vs_J2():
 
     params = [model, R, Q, l, power, b, "sample", n, x_min, x_max]
 
-    J = powerline.J(p, pts, p_nom, params)
+    J = cf.J(p, pts, p_nom, params)
 
     ###########################################
 
@@ -52,10 +52,10 @@ def J1_vs_J2():
     r_model = model.p2r_w(p, x_min, x_max, n)[0]
 
     # Minimum distances to model for all measurements
-    d_min = catenary.compute_d_min(pts, r_model)
+    d_min = cf.compute_d_min(pts, r_model)
 
     # Cost shaping function
-    c = catenary.lorentzian(d_min, l, power, b)
+    c = cf.lorentzian(d_min, l, power, b)
 
     # Average costs per measurement plus regulation
     pts_cost = c.sum() / m
@@ -100,9 +100,9 @@ def J_x_vs_sample():
     params1 = [model, R, Q, l, power, b, "sample", n, x_min, x_max]
     params2 = [model, R, Q, l, power, b, "x", None, None, None]
 
-    J1 = powerline.J(p, pts, p_nom, params1)
+    J1 = cf.J(p, pts, p_nom, params1)
 
-    J2 = powerline.J(p, pts, p_nom, params2)
+    J2 = cf.J(p, pts, p_nom, params2)
 
     print(J1, J2)
 
@@ -137,10 +137,10 @@ def gradient_test():
 
     params = [model, R, Q, l, power, b, "sample", n, x_min, x_max]
 
-    J1 = powerline.J(p, pts, p_nom, params)
+    J1 = cf.J(p, pts, p_nom, params)
 
-    dJ1 = powerline.dJ_dp(p, pts, p_nom, params, num=True)
-    dJ2 = powerline.dJ_dp(p, pts, p_nom, params, num=False)
+    dJ1 = cf.dJ_dp(p, pts, p_nom, params, num=True)
+    dJ2 = cf.dJ_dp(p, pts, p_nom, params, num=False)
 
     print(J1)
     print(dJ2[0:4])
@@ -154,10 +154,10 @@ def gradient_test():
 
     params = [model, R, Q, l, power, b, "x", n, x_min, x_max]
 
-    J3 = powerline.J(p, pts, p_nom, params)
+    J3 = cf.J(p, pts, p_nom, params)
 
-    dJ3 = powerline.dJ_dp(p, pts, p_nom, params, num=True)
-    dJ4 = powerline.dJ_dp(p, pts, p_nom, params, num=False)
+    dJ3 = cf.dJ_dp(p, pts, p_nom, params, num=True)
+    dJ4 = cf.dJ_dp(p, pts, p_nom, params, num=False)
 
     print(J3)
     print(dJ3[0:4])

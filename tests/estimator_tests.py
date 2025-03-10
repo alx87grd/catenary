@@ -12,9 +12,11 @@ from scipy.optimize import minimize
 import time
 
 
-from catenary import singleline as catenary
-from catenary import powerline
-
+from catenary.kinematic import singleline as catenary
+from catenary.kinematic import powerline
+from catenary.estimation import costfunction as cf
+from catenary.estimation.estimator import ArrayEstimator
+from catenary.analysis.evaluation import ErrorPlot
 
 ###########################
 # Powerline Model
@@ -32,9 +34,9 @@ def basic_array32_estimator_test(n_steps=50):
     pts = model.generate_test_data(p, partial_obs=True)
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.0001, 0.002, 0.002, 0.002]
@@ -83,7 +85,7 @@ def basic_array_constant2221_estimator_test(n=5, var=5.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.000001, 0.002, 0.002, 0.002]
@@ -141,7 +143,7 @@ def hard_array_constant2221_estimator_test(n=2, var=5.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.001, 0.000001, 0.002, 0.002, 0.002]
@@ -208,7 +210,7 @@ def translation_search_test(search=True, n=3, var=10.0):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag(
@@ -276,10 +278,10 @@ def hard_test(search=True, method="x", n=2, var=10, n_steps=50):
     pts = pts[:, :30]  # remover one cable
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
     plot.plot_model(p_hat)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 0 * np.diag([0.0002, 0.0002, 0.0, 0.001, 0.0001, 0.002, 0.002, 0.002])
@@ -363,7 +365,7 @@ def very_hard_test(search=True, method="x", n=5, var=100):
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     # estimator.Q = 10 * np.diag([ 0.0002 , 0.0002 , 0.000002 , 0.001 , 0.0001 , 0.002 , 0.002 , 0.002])
     estimator.Q = 10 * np.diag(
@@ -468,7 +470,7 @@ def quad_test(search=True, method="x", n=5, var=10):
 
     callback = None  # plot.update_estimation
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 10 * np.diag(
         [0.0002, 0.0002, 0.0, 0.001, 0.0001, 0.002, 0.002, 0.002]
@@ -555,9 +557,9 @@ def global_convergence_test(n_steps=100):
     pts = model.generate_test_data(p, partial_obs=True)
 
     plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
-    plot2 = powerline.ErrorPlot(p, p_hat, n_steps)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
 
-    estimator = powerline.ArrayEstimator(model, p_hat)
+    estimator = ArrayEstimator(model, p_hat)
 
     estimator.Q = 1.0 * np.diag(
         [0.0002, 0.0002, 0.0002, 0.01, 0.00001, 0.002, 0.002, 0.002]
@@ -599,6 +601,69 @@ def global_convergence_test(n_steps=100):
     plot2.plot_error_mean_std()
 
 
+############################
+def ransac_test(n_steps=100):
+
+    xm = -200
+    xp = 200
+
+    n_obs = 20
+    n_out = 500
+
+    model = powerline.ArrayModel32()
+
+    p = np.array([50, 50, 50, 1.0, 600, 50.0, 30.0, 50.0])
+    p_hat = np.array([100, 100, 25, 0.6, 300, 49.0, 29.0, 49])
+
+    pts = model.generate_test_data(p, partial_obs=True)
+
+    plot = powerline.EstimationPlot(p, p_hat, pts, model.p2r_w)
+    plot2 = ErrorPlot(p, p_hat, n_steps)
+
+    estimator = ArrayEstimator(model, p_hat)
+
+    estimator.Q = 1.0 * np.diag(
+        [0.0002, 0.0002, 0.0002, 0.01, 0.00001, 0.002, 0.002, 0.002]
+    )
+
+    estimator.n_search = 3
+    estimator.p_var = np.array([50.0, 50.0, 50.0, 0, 0, 0, 0, 0])
+
+    estimator.b = 200
+
+    plot.plot_model(p_hat)
+
+    for i in range(n_steps):
+
+        pts = model.generate_test_data(
+            p,
+            partial_obs=True,
+            x_min=xm,
+            x_max=xp,
+            n_obs=n_obs,
+            n_out=n_out,
+            w_o=200.0,
+            center=[0, 0, -200],
+        )
+
+        plot.update_pts(pts)
+
+        start_time = time.time()
+        p_hat = estimator.solve_with_ransac_search(pts, p_hat, n_iter=10, n_pts=50)
+        # p_hat = estimator.solve_with_search(pts, p_hat)
+        solve_time = time.time() - start_time
+
+        plot.update_estimation(p_hat)
+
+        n_tot = pts.shape[1] - n_out
+        pts_in = estimator.get_array_group(p_hat, pts)
+        n_in = pts_in.shape[1] / n_tot * 100.0
+
+        plot2.save_new_estimation(p_hat, solve_time, n_in)
+
+    plot2.plot_error_mean_std()
+
+
 """
 #################################################################
 ##################          Main                         ########
@@ -609,13 +674,13 @@ def global_convergence_test(n_steps=100):
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    # basic_array32_estimator_test( 100 )
+    # basic_array32_estimator_test(100)
 
     # basic_array_constant2221_estimator_test()
     # hard_array_constant2221_estimator_test()
 
-    # translation_search_test( False )
-    # translation_search_test(True)
+    translation_search_test(False)
+    translation_search_test(True)
 
     # hard_test( method = 'sample' )
     # hard_test( method = 'x' , n_steps = 100 )
@@ -625,3 +690,5 @@ if __name__ == "__main__":
     # quad_test()
 
     global_convergence_test()
+
+    # ransac_test()

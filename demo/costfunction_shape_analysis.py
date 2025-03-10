@@ -9,11 +9,9 @@ Created on Wed Nov 29 13:39:56 2023
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
-import time
 
-
-from catenary import singleline as catenary
-from catenary import powerline
+from catenary.kinematic import powerline
+from catenary.estimation import costfunction
 
 
 ############################
@@ -55,7 +53,7 @@ def array32_cost_shape_analysis(model=powerline.ArrayModel32()):
 
         p_hat[2] = zs[i]
 
-        cs[i] = powerline.J(p_hat, pts, p_hat, params)
+        cs[i] = costfunction.J(p_hat, pts, p_hat, params)
 
         plot.update_estimation(p_hat)
 
@@ -114,7 +112,7 @@ def hard_array32_tracking_local_minima_analysis(n_run=10):
 
             p_hat[2] = p[2] + zs[i]
 
-            cs[i, j] = powerline.J(p_hat, pts, p_hat, params)
+            cs[i, j] = costfunction.J(p_hat, pts, p_hat, params)
 
             if j == 0:
                 plot.update_estimation(p_hat)
@@ -188,7 +186,7 @@ def arrayconstant2221_cost_shape_analysis(n_run=10):
 
             p_hat[2] = p[2] + zs[i]
 
-            cs[i, j] = powerline.J(p_hat, pts, p_hat, params)
+            cs[i, j] = costfunction.J(p_hat, pts, p_hat, params)
 
             if j == 0:
                 plot.update_estimation(p_hat)
@@ -217,7 +215,7 @@ def arrayconstant2221_cost_shape_analysis(n_run=10):
 if __name__ == "__main__":
     """MAIN TEST"""
 
-    # array32_cost_shape_analysis()
+    array32_cost_shape_analysis()
 
     hard_array32_tracking_local_minima_analysis()
 

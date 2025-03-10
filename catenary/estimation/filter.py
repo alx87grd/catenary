@@ -1,9 +1,18 @@
 import numpy as np
-import open3d as o3d
+
+try:
+    import open3d as o3d
+except ImportError:
+    print("Open3D is not installed. Please install it using 'pip install open3d'.")
+    o3d = None
+
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
-def remove_ground_plane(points, distance_threshold=0.01, ransac_n=3, num_iterations=1000):
+
+def remove_ground_plane(
+    points, distance_threshold=0.01, ransac_n=3, num_iterations=1000
+):
     """
     Remove the ground plane from points.
 
@@ -22,9 +31,11 @@ def remove_ground_plane(points, distance_threshold=0.01, ransac_n=3, num_iterati
     point_cloud.points = o3d.utility.Vector3dVector(points)
 
     # Apply RANSAC to segment the ground plane
-    plane_model, inliers = point_cloud.segment_plane(distance_threshold=distance_threshold,
-                                                     ransac_n=ransac_n,
-                                                     num_iterations=num_iterations)
+    plane_model, inliers = point_cloud.segment_plane(
+        distance_threshold=distance_threshold,
+        ransac_n=ransac_n,
+        num_iterations=num_iterations,
+    )
 
     # Extract non-ground points
     non_ground_cloud = point_cloud.select_by_index(inliers, invert=True)
@@ -33,6 +44,7 @@ def remove_ground_plane(points, distance_threshold=0.01, ransac_n=3, num_iterati
     non_ground_points = np.asarray(non_ground_cloud.points)
 
     return non_ground_points
+
 
 def find_clusters_dbscan(points, eps=0.02, min_samples=10):
     """
@@ -52,6 +64,7 @@ def find_clusters_dbscan(points, eps=0.02, min_samples=10):
 
     return labels
 
+
 def plot_clusters_3d(points, labels) -> None:
     """
     Plot the point cloud with a different RGB color for each cluster using scatter3D.
@@ -65,7 +78,7 @@ def plot_clusters_3d(points, labels) -> None:
     colors = plt.cm.prism(np.linspace(0, 1, len(unique_labels)))
 
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
 
     # Plot each cluster with a different color
     for k, col in zip(unique_labels, colors):
@@ -73,14 +86,15 @@ def plot_clusters_3d(points, labels) -> None:
             # Black used for noise.
             col = [0, 0, 0, 1]
 
-        class_member_mask = (labels == k)
+        class_member_mask = labels == k
 
         xyz = points[class_member_mask]
-        ax.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=[col], marker='o')
+        ax.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=[col], marker="o")
 
-    ax.set_title('DBSCAN Clustering')
+    ax.set_title("DBSCAN Clustering")
     plt.show()
     plt.pause(10)
+
 
 def is_horizontal_line(cluster_points) -> bool:
     """
@@ -106,7 +120,9 @@ def is_horizontal_line(cluster_points) -> bool:
 
     # Check if the major eigenvalue is significantly larger than the other eigenvalues
     other_eigenvalues = np.delete(eigenvalues, major_eigenvalue_index)
-    if major_eigenvalue < 100 * np.max(other_eigenvalues):  # Adjust the factor as needed
+    if major_eigenvalue < 100 * np.max(
+        other_eigenvalues
+    ):  # Adjust the factor as needed
         return False
 
     # Calculate the angle between the major eigenvector and the horizontal plane (XY-plane)
@@ -116,6 +132,7 @@ def is_horizontal_line(cluster_points) -> bool:
 
     # Return True if the angle is less than or equal to 45 degrees
     return angle <= 45
+
 
 def keep_line_clusters(points, labels):
     """
@@ -148,6 +165,7 @@ def keep_line_clusters(points, labels):
         merged_line_points = np.empty((0, points.shape[1]))
 
     return merged_line_points
+
 
 def filter_cable_points(points):
     """
