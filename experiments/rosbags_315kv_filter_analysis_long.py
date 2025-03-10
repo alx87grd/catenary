@@ -51,7 +51,7 @@ def run_315kv_filter_analysis(filter_methods, plot=False, debug=False):
         params = exp_315kv_test1_params.copy()
         params["dataset"] = load_dataset("ligne315kv_test1")
         params["filter_method"] = filter_method
-        params["name"] = f"V3 315kV with filter = {filter_method})"
+        params["name"] = f"315kV with filter = {filter_method})"
         results, stats = evaluate(params)
         table_add_row(table, params, stats)
 

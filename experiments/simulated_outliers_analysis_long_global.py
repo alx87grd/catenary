@@ -81,7 +81,7 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         datagen_params["n_out"] = num_outliers
         dataset = SimulatedDataset(datagen_params)
 
-        test_params["name"] = f"V3 Simulated global obs with {num_outliers} outliers)"
+        test_params["name"] = f"Global {num_outliers} outliers)"
         test_params["dataset"] = datagen_params
 
         results, stats = evaluate(test_params)

@@ -860,15 +860,6 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     ###########################################################
 
-    # plot_3d = powerline.EstimationPlot(
-    #     p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
-    # )
-
-    # last_pts = dataset.lidar_points(dataset.frame_count() - 1)
-    # plot_3d.update_pts(last_pts)
-    # plot_3d.update_estimation(p_hat)
-    # plot_3d.save(name=name)
-
     fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
     ax = fig.add_subplot(projection="3d")
 
@@ -902,20 +893,20 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
                 pts_hat[0, :, i],
                 pts_hat[1, :, i],
                 pts_hat[2, :, i],
-                "--",
+                "--b",
                 label="Est.",
             )
         else:
-            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
+            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--b")
 
     # # Plot filtered lidar points
     ax.scatter(
         result["points"][-1][0],
         result["points"][-1][1],
         result["points"][-1][2],
-        color="blue",
-        alpha=0.5,
-        s=3,
+        color="red",
+        alpha=0.9,
+        s=4,
         label="Pts",
     )
 
@@ -946,76 +937,11 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
 
     ###########################################################
 
-    # plot_3d = powerline.EstimationPlot(
-    #     p_tru, p_init, None, model.p2r_w, xmin=-200, xmax=200
-    # )
-
-    # last_pts = dataset.lidar_points(dataset.frame_count() - 1)
-    # plot_3d.update_pts(last_pts)
-    # plot_3d.update_estimation(p_hat)
-    # plot_3d.save(name=name)
-
     fig = plt.figure(figsize=(4, 3), dpi=300, frameon=True)
-    ax = fig.add_subplot(projection="3d")
+    ax = plt.axes(projection="3d")
 
     # Compute projected power line points using estimated model
     pts_hat = model.p2r_w(p_hat, x_min=-100, x_max=100, n=200)[1]
-
-    # Compute ground thruth line points
-    pts_ground_thruth = model.p2r_w(p_tru, x_min=-100, x_max=100, n=200)[1]
-
-    # # Plot raw lidar points
-    # ax.scatter(
-    #     dataset.lidar_points(99)[0],
-    #     dataset.lidar_points(99)[1],
-    #     dataset.lidar_points(99)[2],
-    #     color="red",
-    #     alpha=0.5,
-    #     s=1,
-    #     label="Lidar",
-    #     zorder=-1,
-    # )
-
-    # Plot raw lidar points
-    ax.plot(
-        dataset.lidar_points(99)[0],
-        dataset.lidar_points(99)[1],
-        dataset.lidar_points(99)[2],
-        ".r",
-        markersize=1,
-        label="Lidar",
-        zorder=-1,
-    )
-
-    for i in range(pts_ground_thruth.shape[2]):
-
-        if i == 0:
-            ax.plot(
-                pts_ground_thruth[0, :, i],
-                pts_ground_thruth[1, :, i],
-                pts_ground_thruth[2, :, i],
-                "-k",
-                label="True",
-            )
-        else:
-            ax.plot(
-                pts_ground_thruth[0, :, i],
-                pts_ground_thruth[1, :, i],
-                pts_ground_thruth[2, :, i],
-                "-k",
-            )
-
-    for i in range(pts_hat.shape[2]):
-        if i == 0:
-            ax.plot(
-                pts_hat[0, :, i],
-                pts_hat[1, :, i],
-                pts_hat[2, :, i],
-                "--",
-                label="Est.",
-            )
-        else:
-            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "--")
 
     # # Plot filtered lidar points
     ax.scatter(
@@ -1023,10 +949,51 @@ def plot_results(params, results, save=False, n_run_plot=10, fs=10):
         result["points"][-1][1],
         result["points"][-1][2],
         color="blue",
-        alpha=0.9,
-        s=3,
+        alpha=0.5,
         label="Pts",
+        s=3,
     )
+
+    for i in range(pts_hat.shape[2]):
+        if i == 0:
+            ax.plot(
+                pts_hat[0, :, i],
+                pts_hat[1, :, i],
+                pts_hat[2, :, i],
+                "-k",
+                label="Est.",
+            )
+        else:
+            ax.plot(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+
+    # Plot raw lidar points
+    ax.scatter(
+        dataset.lidar_points(99)[0],
+        dataset.lidar_points(99)[1],
+        dataset.lidar_points(99)[2],
+        label="Lidar",
+        color="red",
+        alpha=0.2,
+        s=0.1,
+    )
+
+    # for i in range(pts_ground_thruth.shape[2]):
+
+    #     if i == 0:
+    #         ax.plot(
+    #             pts_ground_thruth[0, :, i],
+    #             pts_ground_thruth[1, :, i],
+    #             pts_ground_thruth[2, :, i],
+    #             "-k",
+    #             label="True",
+    #         )
+    #     else:
+    #         ax.plot(
+    #             pts_ground_thruth[0, :, i],
+    #             pts_ground_thruth[1, :, i],
+    #             pts_ground_thruth[2, :, i],
+    #             "-k",
+    #         )
 
     # Set fixed scale
     ax.set_xlim([-50, 50])
@@ -1051,15 +1018,15 @@ def table_init():
     table = PrettyTable()
     # table.field_names = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg"]
     table.field_names = [
-        "Test name",
+        "name",
         "n pts",
-        "Solve time [ms]",
-        "accuracy [%]",
+        "time [ms]",
+        "acc. [%]",
         # "on-model point ratio tru [%]",
         # "cost-function ratio [%]",
         # "Translation error [m]",
-        "orientation error [rad]",
-        "sag error [m]",
+        "psi [rad]",
+        "a [m]",
         # "offsets error [m]",
     ]
     return table
@@ -1070,13 +1037,13 @@ def table_add_row(table, params, stats):
         [
             params["name"],
             f'{stats["num_points_mean_after_filter"]:.0f} +/- {stats["num_points_std_after_filter"]:.0f}',
-            f'{stats["solve_time_per_seach_mean"]*1000:.2f} +/- {stats["solve_time_per_seach_std"]*1000:.2f}',
+            f'{stats["solve_time_per_seach_mean"]*1000:.0f} +/- {stats["solve_time_per_seach_std"]*1000:.0f}',
             f'{stats["n_in_ratio_mean"]*100:.1f}% +/- {stats["n_in_ratio_std"]*100:.1f}',
             # f'{stats["n_in_ratio_tru_mean"]*100:.1f}% +/- {stats["n_in_ratio_tru_std"]*100:.1f}',
             # f'{stats["J_ratio_mean"]*100:.1f} +/- {stats["J_ratio_std"]*100:.2f}',
             # f'{np.array2string(stats["p_err_mean"][0:3], precision=2)} +/- {np.array2string(stats["p_err_std"][0:3], precision=2)}',
-            f'{np.array2string(stats["p_err_mean"][3], precision=2)} +/- {np.array2string(stats["p_err_std"][3], precision=2)}',
-            f'{np.array2string(stats["p_err_mean"][4], precision=2)} +/- {np.array2string(stats["p_err_std"][4], precision=2)}',
+            f'{np.array2string(stats["p_err_mean"][3], precision=1)} +/- {np.array2string(stats["p_err_std"][3], precision=1)}',
+            f'{np.array2string(stats["p_err_mean"][4], precision=0)} +/- {np.array2string(stats["p_err_std"][4], precision=0)}',
             # f'{np.array2string(stats["p_err_mean"][5:], precision=2)} +/- {np.array2string(stats["p_err_std"][5:], precision=2)}',
             #     f'({stats["p_err_mean"][0]:.2f}, {stats["p_err_mean"][1]:.2f}, {stats["p_err_mean"][2]:.2f}) +/- '
             #     + f'({stats["p_err_std"][0]:.2f}, {stats["p_err_std"][1]:.2f}, {stats["p_err_std"][2]:.2f})',
@@ -1409,11 +1376,11 @@ if __name__ == "__main__":
 
     datagen_params = {
         "name": "sim_222",
-        "n_out": 50,
+        "n_out": 10,
         "n_frames": 100,
         "n_obs": 10,
-        "x_min": -100,
-        "x_max": 100,
+        "x_min": -10,
+        "x_max": 10,
         "w_l": 0.2,
         "w_o": 10.0,
         "center": [0, 0, -25],
