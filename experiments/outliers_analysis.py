@@ -1,5 +1,4 @@
 from catenary.analysis.evaluation import (
-    animate_results,
     animate_results2,
     evaluate,
     plot_results,
@@ -10,15 +9,26 @@ from catenary.analysis.dataset import load_dataset, SimulatedDataset
 import numpy as np
 
 
-def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False):
+def outliers_analysis(
+    num_outliers_scenarios,
+    filter_methods,
+    n_run=5,
+    plot=False,
+    debug=False,
+    partial_obs=True,
+):
+    if partial_obs:
+        x_max = 10
+    else:
+        x_max = 100
 
     datagen_params = {
         "name": "sim_222",
-        "n_out": 50,
+        "n_out": 10,
         "n_frames": 100,
         "n_obs": 10,
-        "x_min": -100,
-        "x_max": 100,
+        "x_min": -x_max,
+        "x_max": x_max,
         "w_l": 0.2,
         "w_o": 10.0,
         "center": [0, 0, -25],
@@ -66,7 +76,7 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         "p_var": np.array([5.0, 5.0, 5.0, 1.0, 400.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         # "filter_method": "clustering",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 5,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": n_run,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
@@ -82,7 +92,11 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         datagen_params["n_out"] = num_outliers
         dataset = SimulatedDataset(datagen_params)
 
-        test_params["name"] = f"Simulated 222 ({num_outliers} outliers)"
+        if partial_obs:
+            test_params["name"] = f"Partial with {num_outliers} outliers n_run={n_run}"
+        else:
+            test_params["name"] = f"Global with {num_outliers} outliers n_run={n_run}"
+
         test_params["dataset"] = datagen_params
 
         results, stats = evaluate(test_params)
@@ -93,7 +107,28 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
         if debug:
             animate_results2(test_params, results)
 
+        test_params["name"] = f"{num_outliers}"
         table_add_row(table, test_params, stats)
+
+    print(table)
+
+    table = table_init()
+    for filter_method in filter_methods:
+        params = test_params.copy()
+        params["dataset"] = load_dataset("ligne315kv_test1")
+        params["filter_method"] = filter_method
+        params["name"] = f"315kV with filter = {filter_method} n_run={n_run}"
+
+        results, stats = evaluate(params)
+
+        if plot:
+            plot_results(params, results, save=True)
+
+        if debug:
+            animate_results2(params, results)
+
+        params["name"] = f"{filter_method}"
+        table_add_row(table, params, stats)
 
     print(table)
 
@@ -102,8 +137,39 @@ def simulated_outliers_analysis(num_outliers_scenarios, plot=False, debug=False)
 
 if __name__ == "__main__":
 
-    # Number of outliers to simulate
-    # num_outliers_scenarios = [1, 10, 100, 500, 1000]
-    num_outliers_scenarios = [1, 3, 5]
+    outliers = [10, 20, 50, 75, 100, 150, 200, 300]
 
-    table = simulated_outliers_analysis(num_outliers_scenarios, plot=True, debug=True)
+    # # Global observations analysis
+    # table = outliers_analysis(
+    #     outliers, [], n_run=3, plot=True, debug=False, partial_obs=False
+    # )
+    # table = outliers_analysis(
+    #     outliers, [], n_run=10, plot=True, debug=False, partial_obs=False
+    # )
+    # table = outliers_analysis(
+    #     outliers, [], n_run=100, plot=True, debug=False, partial_obs=False
+    # )
+
+    # # Partial observations analysis
+    # table = outliers_analysis(
+    #     outliers, [], n_run=3, plot=True, debug=False, partial_obs=True
+    # )
+    # table = outliers_analysis(
+    #     outliers, [], n_run=10, plot=True, debug=False, partial_obs=True
+    # )
+    # table = outliers_analysis(
+    #     outliers, [], n_run=100, plot=True, debug=False, partial_obs=True
+    # )
+
+    # Filters analysis for the 315kV dataset
+    filters = ["corridor", "ground_filter", "clustering"]
+
+    table = outliers_analysis(
+        [], filters, n_run=3, plot=True, debug=False, partial_obs=True
+    )
+    table = outliers_analysis(
+        [], filters, n_run=10, plot=True, debug=False, partial_obs=True
+    )
+    table = outliers_analysis(
+        [], filters, n_run=100, plot=True, debug=False, partial_obs=True
+    )
