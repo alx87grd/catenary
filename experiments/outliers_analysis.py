@@ -139,13 +139,13 @@ if __name__ == "__main__":
 
     # Outliers analysis
     # outliers = [10, 20, 50, 75, 100, 150, 200, 300]
-    outliers = [10]
+    # outliers = [10]
 
     # Filters analysis for the 315kV dataset
-    # filters = ["corridor", "ground_filter", "clustering"]
-    filters = ["corridor"]
+    filters = ["corridor", "ground_filter", "clustering"]
+    # filters = ["corridor"]
 
-    n_run = 100
+    n_run = 1
 
     # # # Global observations analysis
     # table = outliers_analysis(

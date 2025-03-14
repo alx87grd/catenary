@@ -12,6 +12,12 @@ from catenary.analysis.dataset import Dataset, SimulatedDataset
 
 from prettytable import PrettyTable
 
+import matplotlib
+
+# Embed font type in PDF when exporting
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 
 def evaluate(params: dict):
     """
@@ -1068,6 +1074,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
 
     if save:
         fig.savefig(name + "_3D.pdf")
+        fig.savefig(name + "_3D.png")
 
     ###########################################################
 
@@ -1126,6 +1133,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
 
     if save:
         fig.savefig(name + "_3D_with_lidar.pdf")
+        fig.savefig(name + "_3D_with_lidar.png")
 
     ###########################################################
     # Figure for acc, psi, sag
@@ -1198,6 +1206,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     fig.show()
     if save:
         fig.savefig(name + "_acc_psi_sag.pdf")
+        fig.savefig(name + "_acc_psi_sag.png")
 
     ###########################################################
     # Figure for all plots
@@ -1374,6 +1383,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     fig.show()
     if save:
         fig.savefig(name + "_all.pdf")
+        fig.savefig(name + "_all.png")
 
     ###########################################################
 
@@ -1552,6 +1562,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     fig.show()
     if save:
         fig.savefig(name + "_all_v2.pdf")
+        fig.savefig(name + "_all_v2.png")
 
 
 def table_init():
