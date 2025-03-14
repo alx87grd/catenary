@@ -1211,20 +1211,24 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     for j in range(n_run_plot):
         if j == 0:
             ax.plot(
-                frame[1:], pt_ratio[:, j], "--k", label="Sample run", linewidth=0.25
+                frame[1:],
+                pt_ratio[:, j] * 100,
+                "--k",
+                label="Sample run",
+                linewidth=0.25,
             )
         else:
-            ax.plot(frame[1:], pt_ratio[:, j], "--k", linewidth=0.25)
-    ax.plot(frame[1:], pt_ratio_mean[:], "-r", label="Average")
+            ax.plot(frame[1:], pt_ratio[:, j] * 100, "--k", linewidth=0.25)
+    ax.plot(frame[1:], pt_ratio_mean[:] * 100, "-r", label="Average")
     ax.fill_between(
         frame[1:],
-        pt_ratio_mean[:] - pt_ratio_std[:],
-        pt_ratio_mean[:] + pt_ratio_std[:],
+        pt_ratio_mean[:] * 100 - pt_ratio_std[:] * 100,
+        pt_ratio_mean[:] * 100 + pt_ratio_std[:] * 100,
         color="#DDDDDD",
         label="Std. dev.",
     )
 
-    ax.set_ylabel("Accuracy [-]", fontsize=fs)
+    ax.set_ylabel("Accuracy [%]", fontsize=fs)
     ax.legend(loc="lower right", fontsize=fs)
     ax.grid(True)
     ax.tick_params(labelsize=fs)
@@ -1372,6 +1376,182 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
         fig.savefig(name + "_all.pdf")
 
     ###########################################################
+
+    ###########################################################
+    # Figure for all plots
+    ###########################################################
+
+    fig, axes = plt.subplots(7, figsize=(4, 8), dpi=300, frameon=True)
+
+    # Subplot 1 : Accuracy
+    ax = axes[0]
+
+    for j in range(n_run_plot):
+        if j == 0:
+            ax.plot(
+                frame[1:],
+                pt_ratio[:, j] * 100,
+                "--k",
+                label="Sample run",
+                linewidth=0.25,
+            )
+        else:
+            ax.plot(frame[1:], pt_ratio[:, j] * 100, "--k", linewidth=0.25)
+    ax.plot(frame[1:], pt_ratio_mean[:] * 100, "-r", label="Average")
+    ax.fill_between(
+        frame[1:],
+        pt_ratio_mean[:] * 100 - pt_ratio_std[:] * 100,
+        pt_ratio_mean[:] * 100 + pt_ratio_std[:] * 100,
+        color="#DDDDDD",
+        label="Std. dev.",
+    )
+
+    ax.set_ylabel("Accuracy [%]", fontsize=fs)
+    ax.legend(loc="lower right", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 2 : x
+    ax = axes[1]
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[0, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[0, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[0, :] - PE_std[0, :],
+        PE_mean[0, :] + PE_std[0, :],
+        color="#DDDDDD",
+    )
+    ax.set_ylabel("$x_e$ [m]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 3 : y
+    ax = axes[2]
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[1, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[1, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[1, :] - PE_std[1, :],
+        PE_mean[1, :] + PE_std[1, :],
+        color="#DDDDDD",
+    )
+    ax.set_ylabel("$y_e$ [m]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 4 : z
+    ax = axes[3]
+
+    # Plot n runs sample
+    for j in range(n_run_plot):
+        ax.plot(
+            frame,
+            PE[2, :, j],
+            "--k",
+            linewidth=0.25,
+        )
+
+    # Plot mean
+    ax.plot(frame, PE_mean[2, :], "-r")
+
+    # Plot std
+    ax.fill_between(
+        frame,
+        PE_mean[2, :] - PE_std[2, :],
+        PE_mean[2, :] + PE_std[2, :],
+        color="#DDDDDD",
+    )
+    ax.set_ylabel("$z_e$ [m]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 5 : psi
+    ax = axes[4]
+
+    for j in range(n_run_plot):
+        if j == 0:
+            ax.plot(frame, PE[3, :, j], "--k", linewidth=0.25)
+        else:
+            ax.plot(frame, PE[3, :, j], "--k", linewidth=0.25)
+    ax.plot(frame, PE_mean[3, :], "-r")
+    ax.fill_between(
+        frame,
+        PE_mean[3, :] - PE_std[3, :],
+        PE_mean[3, :] + PE_std[3, :],
+        color="#DDDDDD",
+    )
+    ax.set_ylabel("$\psi_e$ [rad]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 6 : sag
+    ax = axes[5]
+
+    for j in range(n_run_plot):
+        ax.plot(frame, PE[4, :, j], "--k", linewidth=0.25)
+    ax.plot(frame, PE_mean[4, :], "-r")
+    ax.fill_between(
+        frame,
+        PE_mean[4, :] - PE_std[4, :],
+        PE_mean[4, :] + PE_std[4, :],
+        color="#DDDDDD",
+    )
+    ax.set_ylabel("$a_e$ [m]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Subplot 7 : offsets
+    ax = axes[6]
+
+    l_n = PE.shape[0] - 5
+
+    for i in range(l_n):
+        k = 5 + i
+        for j in range(n_run_plot):
+            ax.plot(frame, PE[k, :, j], "--k", linewidth=0.25)
+        ax.plot(frame, PE_mean[k, :], "-r")
+        ax.fill_between(
+            frame,
+            PE_mean[k, :] - PE_std[k, :],
+            PE_mean[k, :] + PE_std[k, :],
+            color="#DDDDDD",
+        )
+
+    ax.set_ylabel("$\Delta_e$ [m]", fontsize=fs)
+    ax.grid(True)
+    ax.tick_params(labelsize=fs)
+
+    # Finalizing
+
+    ax.set_xlabel("frames", fontsize=fs)
+    fig.tight_layout()
+    fig.show()
+    if save:
+        fig.savefig(name + "_all_v2.pdf")
 
 
 def table_init():
