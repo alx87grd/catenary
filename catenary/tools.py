@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
+# Embed font type in PDF when exporting
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
+
 # Use interactive backend
 try:
     # Default usage for interactive mode
