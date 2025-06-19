@@ -13,11 +13,8 @@ python -m venv .venv
 source .venv\bin\activate
 pip install numpy scipy matplotlib tqdm rosbags open3d prettytable
 export PYTHONPATH=`pwd`
-python experiments/rosbags_runs.py
+python demo/convergence_demos.py
 ```
+Note: tqdm, rosbags, open3d and prettytable can be ommited for the basic functionnality. Only numpy, scipy and matplolib are required for the basic functionnality.
 
-# catenary
 
-experiments/simulation_performance_analysis -> Estimation tests with simulated data
-
-experiments/rosbags_runs -> load .npy real data (change the path in the file) 
