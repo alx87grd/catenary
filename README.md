@@ -4,7 +4,7 @@
 
 
 # Colab exemple
-\url{https://colab.research.google.com/drive/10_0sNztttdJt7fCVf6RT6b8Ib6KUG8tr?usp=sharing}
+https://colab.research.google.com/drive/10_0sNztttdJt7fCVf6RT6b8Ib6KUG8tr?usp=sharing
 
 # setup
 ```
