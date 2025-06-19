@@ -1,5 +1,11 @@
-# setup
 
+![exp](https://github.com/user-attachments/assets/80c1c5b5-9182-404f-856c-3cd88df61dce)
+
+
+# Colab exemple
+\url{https://colab.research.google.com/drive/10_0sNztttdJt7fCVf6RT6b8Ib6KUG8tr?usp=sharing}
+
+# setup
 ```
 cd catenary
 python -m venv .venv
