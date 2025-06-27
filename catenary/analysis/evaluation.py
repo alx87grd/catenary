@@ -10,8 +10,6 @@ from catenary.estimation import costfunction
 from catenary.tools import print_progress_bar
 from catenary.analysis.dataset import Dataset, SimulatedDataset
 
-from prettytable import PrettyTable
-
 import matplotlib
 
 # Embed font type in PDF when exporting
@@ -1566,6 +1564,8 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
 
 
 def table_init():
+    from prettytable import PrettyTable
+
     table = PrettyTable()
     # table.field_names = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg"]
     table.field_names = [

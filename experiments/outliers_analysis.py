@@ -138,16 +138,16 @@ def outliers_analysis(
 if __name__ == "__main__":
 
     # Outliers analysis
-    # outliers = [10, 20, 50, 75, 100, 150, 200, 300]
+    outliers = [10, 20, 50, 75, 100, 150, 200, 300]
     # outliers = [10]
 
     # Filters analysis for the 315kV dataset
     filters = ["corridor", "ground_filter", "clustering"]
     # filters = ["corridor"]
 
-    n_run = 1
+    n_run = 3
 
-    # # # Global observations analysis
+    # # Global observations analysis
     # table = outliers_analysis(
     #     outliers, [], n_run, plot=True, debug=False, partial_obs=False
     # )
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     #     outliers, [], n_run, plot=True, debug=False, partial_obs=True
     # )
 
-    # # Filters analysis
+    # Filters analysis
     table = outliers_analysis(
         [], filters, n_run, plot=True, debug=False, partial_obs=True
     )
