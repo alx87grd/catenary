@@ -39,19 +39,28 @@ def rosbagEvaluation(
     pts_hat = estimator.model.p2r_w(param_powerline, points[0], points[1], points[2])[1]
     print(param_powerline)
     if filtered:
-        ax.scatter3D(pt[0], pt[1], pt[2], color="green", alpha=0.5)
+        ax.scatter3D(
+            pt[0], pt[1], pt[2], color="green", label="filtered points", alpha=0.5
+        )
     ax.scatter3D(
         drone_pos[pt_id][0],
         drone_pos[pt_id][1],
         drone_pos[pt_id][2],
         color="blue",
+        label="drone position",
         s=50,
         marker="*",
     )
 
     # Projected powerline points
     for i in range(pts_hat.shape[2]):
-        ax.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+        ax.plot3D(
+            pts_hat[0, :, i],
+            pts_hat[1, :, i],
+            pts_hat[2, :, i],
+            "-k",
+            label="estimated conductors",
+        )
 
     # Raw velodyne points
     ax.scatter3D(
@@ -59,6 +68,7 @@ def rosbagEvaluation(
         velodyne_pts[pt_id][1],
         velodyne_pts[pt_id][2],
         color="red",
+        label="LiDAR points",
         alpha=1,
         s=1,
     )
@@ -85,23 +95,41 @@ def rosbagEvaluation(
         )[1]
         ax.clear()
         if filtered:
-            ax.scatter3D(pt[0], pt[1], pt[2], color="green", alpha=0.5)
+            ax.scatter3D(
+                pt[0], pt[1], pt[2], color="green", alpha=0.5, label="filtered points"
+            )
         ax.scatter3D(
             drone_pos[pt_id][0],
             drone_pos[pt_id][1],
             drone_pos[pt_id][2],
             color="blue",
+            label="drone position",
             s=50,
             marker="*",
         )
         for i in range(pts_hat.shape[2]):
-            ax.plot3D(pts_hat[0, :, i], pts_hat[1, :, i], pts_hat[2, :, i], "-k")
+            if i == 0:
+                ax.plot3D(
+                    pts_hat[0, :, i],
+                    pts_hat[1, :, i],
+                    pts_hat[2, :, i],
+                    "-k",
+                    label="estimated conductors",
+                )
+            else:
+                ax.plot3D(
+                    pts_hat[0, :, i],
+                    pts_hat[1, :, i],
+                    pts_hat[2, :, i],
+                    "-k",
+                )
 
         ax.scatter3D(
             velodyne_pts[pt_id][0],
             velodyne_pts[pt_id][1],
             velodyne_pts[pt_id][2],
             color="red",
+            label="LiDAR points",
             alpha=1,
             s=1,
         )
@@ -110,9 +138,16 @@ def rosbagEvaluation(
         ax.set_xlim([-50, 50])
         ax.set_ylim([-50, 50])
         ax.set_zlim([0, 50])
+        ax.tick_params(labelsize=10)
+        ax.legend(loc="upper right", fontsize=10)
 
         # add timestamp to the plot
-        ax.text2D(0.05, 0.95, str(timestamps[pt_id]), transform=ax.transAxes)
+        ax.text2D(
+            0.00,
+            0.0,
+            "$\hat{p}=$ " + np.array2string(param_powerline, precision=2),
+            transform=ax.transAxes,
+        )
 
         plt.pause(0.001)
 

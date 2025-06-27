@@ -786,7 +786,7 @@ if __name__ == "__main__":
 
     # Demos
     ###############################
-    GlobalConvergenceTest(2, True, True)
+    # GlobalConvergenceTest(2, True, True)
     # GlobalConvergenceBagTest( 2 , True , False )
     PartialObsTest(2, True, False)
 
