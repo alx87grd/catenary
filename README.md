@@ -1,5 +1,8 @@
 # Model-Based Estimation of Overhead Power Lines Using LiDAR
 
+Paper: https://arxiv.org/abs/2506.20812
+Video: https://youtu.be/KMsOjzCREwk
+
 ![exp](https://github.com/user-attachments/assets/80c1c5b5-9182-404f-856c-3cd88df61dce)
 
 
