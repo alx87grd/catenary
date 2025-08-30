@@ -1,4 +1,9 @@
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 import numpy as np
 import time
 
@@ -9,12 +14,6 @@ from catenary.estimation.estimator import ArrayEstimator
 from catenary.estimation import costfunction
 from catenary.tools import print_progress_bar
 from catenary.analysis.dataset import Dataset, SimulatedDataset
-
-import matplotlib
-
-# Embed font type in PDF when exporting
-matplotlib.rcParams["pdf.fonttype"] = 42
-matplotlib.rcParams["ps.fonttype"] = 42
 
 
 def evaluate(params: dict):
@@ -1559,8 +1558,8 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     fig.tight_layout()
     fig.show()
     if save:
-        fig.savefig(name + "_all_v2.pdf")
-        fig.savefig(name + "_all_v2.png")
+        fig.savefig(name + "_all_v3.pdf")
+        fig.savefig(name + "_all_v3.png")
 
 
 def table_init():
