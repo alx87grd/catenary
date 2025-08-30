@@ -9,6 +9,12 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 from catenary.kinematic import singleline as catenary
 from catenary.estimation import costfunction as cf
 

@@ -7,7 +7,11 @@ Created on Tue Oct 31 14:46:33 2023
 """
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 from scipy.optimize import minimize
 import time
 

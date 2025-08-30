@@ -1,3 +1,9 @@
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 from catenary.analysis.evaluation import (
     animate_results2,
     evaluate,

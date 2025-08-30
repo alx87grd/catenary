@@ -7,7 +7,11 @@ Created on Mon Oct 23 09:03:21 2023
 """
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 
 
 ###########################

@@ -8,7 +8,11 @@ Created on Wed Sep 20 11:52:04 2023
 
 from catenary import tools
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 
 
 ###########################
