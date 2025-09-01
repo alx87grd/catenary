@@ -91,7 +91,7 @@ def outliers_analysis(
         "use_grad": True,
     }
 
-    table = table_init()
+    # table = table_init()
 
     for num_outliers in num_outliers_scenarios:
 
@@ -114,11 +114,11 @@ def outliers_analysis(
             animate_results2(test_params, results)
 
         test_params["name"] = f"{num_outliers}"
-        table_add_row(table, test_params, stats)
+        # table_add_row(table, test_params, stats)
 
-    print(table)
+    # print(table)
 
-    table = table_init()
+    # table = table_init()
     for filter_method in filter_methods:
         params = test_params.copy()
         params["dataset"] = load_dataset("ligne315kv_test1")
@@ -134,11 +134,11 @@ def outliers_analysis(
             animate_results2(params, results)
 
         params["name"] = f"{filter_method}"
-        table_add_row(table, params, stats)
+        # table_add_row(table, params, stats)
 
-    print(table)
+    # print(table)
 
-    return table
+    return True
 
 
 if __name__ == "__main__":
@@ -154,14 +154,14 @@ if __name__ == "__main__":
     n_run = 100
 
     # Global observations analysis
-    # table = outliers_analysis(
-    #     outliers, [], n_run, plot=True, debug=False, partial_obs=False
-    # )
+    table = outliers_analysis(
+        outliers, [], n_run, plot=True, debug=False, partial_obs=False
+    )
 
     # # Partial observations analysis
-    table = outliers_analysis(
-        outliers, [], n_run, plot=True, debug=False, partial_obs=True
-    )
+    # table = outliers_analysis(
+    #     outliers, [], n_run, plot=True, debug=False, partial_obs=True
+    # )
 
     # # Filters analysis
     # table = outliers_analysis(
