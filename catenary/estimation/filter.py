@@ -6,7 +6,13 @@ except ImportError:
     print("Open3D is not installed. Please install it using 'pip install open3d'.")
     o3d = None
 
-from sklearn.cluster import DBSCAN
+
+try:
+    from sklearn.cluster import DBSCAN
+except ImportError:
+    print("scikit-learn is not installed. Please install it using 'pip install scikit-learn'.")
+    DBSCAN = None
+
 import matplotlib.pyplot as plt
 
 

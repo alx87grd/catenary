@@ -1978,7 +1978,7 @@ if __name__ == "__main__":
         "p_var": np.array([5.0, 5.0, 5.0, 1.0, 400.0, 2.0, 2.0, 2.0]),
         "filter_method": "corridor",  # No filter, as simulated data is already filtered
         # "filter_method": "clustering",  # No filter, as simulated data is already filtered
-        "num_randomized_tests": 1,  # Number of tests to execute with randomized initial guess
+        "num_randomized_tests": 10,  # Number of tests to execute with randomized initial guess
         "stats_num_frames": 10,  # Number of last frames to use for statistics (experimental results have 100 frames)
         "method": "x",
         "n_sample": 201,
@@ -1988,8 +1988,8 @@ if __name__ == "__main__":
     }
 
     # Real data
-    dataset = load_dataset("ligne315kv_test1")
-    test_params["dataset"] = dataset
+    # dataset = load_dataset("ligne315kv_test1")
+    # test_params["dataset"] = dataset
 
     # Simulated data
     test_params["dataset"] = datagen_params
@@ -1997,4 +1997,4 @@ if __name__ == "__main__":
     results, stats = evaluate(test_params)
     plot_results(test_params, results, save=True, n_run_plot=5)
     # animate_results(test_params, results)
-    animate_results2(test_params, results)
+    # animate_results2(test_params, results)
