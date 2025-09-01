@@ -154,9 +154,9 @@ if __name__ == "__main__":
     n_run = 100
 
     # Global observations analysis
-    # table = outliers_analysis(
-    #     outliers, [], n_run, plot=True, debug=False, partial_obs=False
-    # )
+    table = outliers_analysis(
+        outliers, [], n_run, plot=True, debug=False, partial_obs=False
+    )
 
     # # Partial observations analysis
     table = outliers_analysis(
