@@ -1388,7 +1388,7 @@ def plot_results(params, results, save=False, n_run_plot=5, fs=8):
     # Figure for all plots
     ###########################################################
 
-    fig, axes = plt.subplots(7, figsize=(4, 20), dpi=300, frameon=True)
+    fig, axes = plt.subplots(7, figsize=(4, 8), dpi=300, frameon=True)
 
     # Subplot 1 : Accuracy
     ax = axes[0]

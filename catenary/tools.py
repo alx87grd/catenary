@@ -9,7 +9,8 @@ matplotlib.rcParams["ps.fonttype"] = 42
 # Use interactive backend
 try:
     # Default usage for interactive mode
-    matplotlib.use("Qt5Agg")
+    # matplotlib.use("Qt5Agg")
+    matplotlib.use("MacOSX")
     plt.ion()  # Set interactive mode
 
     print("Matplotlib Qt5Agg + Interactive mode loaded successfully")

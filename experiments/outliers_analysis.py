@@ -151,12 +151,12 @@ if __name__ == "__main__":
     # filters = ["corridor", "ground_filter", "clustering"]
     filters = ["corridor"]
 
-    n_run = 1
+    n_run = 100
 
     # Global observations analysis
-    table = outliers_analysis(
-        outliers, [], n_run, plot=True, debug=False, partial_obs=False
-    )
+    # table = outliers_analysis(
+    #     outliers, [], n_run, plot=True, debug=False, partial_obs=False
+    # )
 
     # # Partial observations analysis
     # table = outliers_analysis(
@@ -164,6 +164,6 @@ if __name__ == "__main__":
     # )
 
     # # Filters analysis
-    # table = outliers_analysis(
-    #     [], filters, n_run, plot=True, debug=False, partial_obs=True
-    # )
+    table = outliers_analysis(
+        [], filters, n_run, plot=True, debug=False, partial_obs=True
+    )
